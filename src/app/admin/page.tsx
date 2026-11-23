@@ -4,6 +4,7 @@ import Link from "next/link";
 import { clientIp } from "@/lib/abuse/ip";
 import { env } from "@/lib/env";
 import { getStats } from "@/lib/admin/ops";
+import { budgetState } from "@/lib/jobs/budget";
 import { requireAdminPage } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Admin" };
@@ -15,6 +16,10 @@ export default async function AdminHome() {
   await requireAdminPage();
   const s = await getStats();
   const seenIp = clientIp(await headers());
+  const budget = await budgetState();
+  const budgetNote = budget.active
+    ? `of $${budget.budgetUsd.toFixed(2)} budget; new jobs stop at $${budget.stopAtUsd.toFixed(2)}`
+    : "budget guard off (not using RunPod)";
   const rows: [string, string, string?][] = [
     ["Users", n(s.users), `${n(s.usersLast7d)} new in 7 days`],
     ["Paying users", n(s.payingUsers), "active subscriptions"],
@@ -22,6 +27,7 @@ export default async function AdminHome() {
     ["Voice-overs, 24 h", n(s.jobs24h.total), `${n(s.jobs24h.done)} done, ${n(s.jobs24h.failed)} failed`],
     ["Characters, 24 h", n(s.chars24h), `${n(s.chars30d)} in 30 days`],
     ["Queue now", n(s.queue.queued + s.queue.processing), `${n(s.queue.processing)} generating, ${n(s.queue.queued)} waiting`],
+    ["GPU spend (estimate)", `$${budget.spentUsd.toFixed(2)}`, budgetNote],
   ];
   const f = s.funnel30d;
   return (

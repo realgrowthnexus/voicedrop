@@ -139,6 +139,10 @@ export const jobs = pgTable(
     runpodId: text("runpod_id"),
     error: text("error"),
     durationSec: real("duration_sec"),
+    /** Billed GPU time we attribute to this job (execution + queue/cold start + idle tail), ms. */
+    gpuMs: integer("gpu_ms"),
+    /** Estimated GPU cost in micro-dollars (1e-6 USD). */
+    gpuCostMicros: integer("gpu_cost_micros"),
     files: jsonb("files").$type<Record<string, { bytes: number }>>(),
     flagReason: text("flag_reason"),
     ipHash: text("ip_hash"),
