@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { paddleApi, priceIdFor } from "@/lib/billing/paddle";
 import { track } from "@/lib/events";
-import { handle, HttpError } from "@/lib/http";
+import { assertSameOrigin, handle, HttpError } from "@/lib/http";
 import { getActivePlan } from "@/lib/quota/ledger";
 import { rateLimit } from "@/lib/ratelimit";
 import { requireUser } from "@/lib/session";
@@ -14,6 +14,7 @@ const Body = z.object({ product: z.enum(["creator", "pro", "pack"]), quantity: z
 
 /** Creates the Paddle transaction server-side (price + userId can't be tampered with) and returns its id for Paddle.js. */
 export const POST = handle(async (req: NextRequest) => {
+  assertSameOrigin(req);
   const u = await requireUser(req.headers);
   if (!(await rateLimit(`checkout:${u.id}`, 10, 300)).ok) throw new HttpError(429, "rate_limited", "Too many attempts. Please wait a few minutes.");
   const parsed = Body.safeParse(await req.json().catch(() => null));

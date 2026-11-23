@@ -25,7 +25,7 @@ export function JobResult({ job, compact = false }: { job: PublicJob; compact?: 
           Done: {fmtDur(job.durationSec)} of audio with {job.voiceName}
         </p>
       ) : null}
-      <audio controls preload="none" className="mt-3 w-full" src={`/api/jobs/${job.id}/file/mp3?inline=1`}>
+      <audio controls preload={compact ? "none" : "metadata"} className="mt-3 w-full" src={`/api/jobs/${job.id}/file/mp3?inline=1`}>
         Your browser can&apos;t play audio here. Use the download button instead.
       </audio>
       <div className="mt-4 flex flex-wrap gap-2">

@@ -52,6 +52,28 @@ describe("auth", () => {
     expect(other.cookie).toContain("session_token");
   });
 
+  it("signups without a client IP are not blocked by the per-IP limit", async () => {
+    const { auth } = await import("@/lib/auth");
+    const { sql: rawSql } = await import("drizzle-orm");
+    for (const n of [1, 2, 3, 4]) {
+      const email = `noip${n}@gmail.com`;
+      await db().execute(rawSql`delete from rate_limit`); // isolate from Better Auth's own per-IP limiter
+      await auth().handler(
+        new Request("http://localhost:3000/api/auth/sign-in/magic-link", {
+          method: "POST",
+          headers: { "content-type": "application/json", origin: "http://localhost:3000", "x-forwarded-for": `203.0.113.${n}` },
+          body: JSON.stringify({ email, callbackURL: "/dashboard" }),
+        }),
+      );
+      const { db: d } = await import("@/db");
+      const { appEvents } = await import("@/db/schema");
+      const { desc, eq } = await import("drizzle-orm");
+      const [ev] = await d().select().from(appEvents).where(eq(appEvents.name, "dev_email")).orderBy(desc(appEvents.createdAt)).limit(1);
+      const res = await auth().handler(new Request((ev.props as { url: string }).url)); // no IP header at all
+      expect(res.headers.getSetCookie().join(";")).toContain("session_token");
+    }
+  });
+
   it("banned user is rejected even with a live session, and cannot sign in again", async () => {
     const r = await signIn("bad@gmail.com");
     await db().update(user).set({ banned: true }).where(eq(user.email, "bad@gmail.com"));

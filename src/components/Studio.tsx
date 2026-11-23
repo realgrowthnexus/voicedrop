@@ -16,7 +16,13 @@ const STATUS_COPY: Record<string, string> = {
 
 export function Studio() {
   const [me, setMe] = useState<Me | null>(null);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(() => {
+    try {
+      return localStorage.getItem(DRAFT_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [voice, setVoice] = useState("blend_michael_fenrir");
   const [speed, setSpeed] = useState(1);
   const [formats, setFormats] = useState<Format[]>(["mp3"]);
@@ -55,11 +61,9 @@ export function Studio() {
   );
 
   useEffect(() => {
-    void refreshMe();
-    try {
-      const d = localStorage.getItem(DRAFT_KEY);
-      if (d) setText(d);
-    } catch {}
+    api<Me>("/api/me")
+      .then(setMe)
+      .catch(() => {});
     // Resume an in-flight job after a reload.
     api<{ jobs: PublicJob[] }>("/api/jobs")
       .then(({ jobs }) => {
@@ -250,7 +254,7 @@ export function Studio() {
                 <p className="font-semibold">{STATUS_COPY[job.status]}</p>
               </div>
               <p className="mt-1 text-sm text-graphite">
-                {job.voiceName} · {n(job.chars)} characters{job.status !== "held" ? ` · ${elapsed}s` : ""}. You can leave this page; it'll be in your history.
+                {job.voiceName} · {n(job.chars)} characters{job.status !== "held" ? ` · ${elapsed}s` : ""}. You can leave this page; it&apos;ll be in your history.
               </p>
             </div>
           ) : job ? (

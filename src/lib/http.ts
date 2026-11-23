@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 
 export class HttpError extends Error {
   constructor(
@@ -28,4 +29,15 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
       return toResponse(e);
     }
   };
+}
+
+/** Defence in depth against CSRF for cookie-authenticated POSTs (on top of SameSite=Lax cookies). */
+export function assertSameOrigin(req: Request): void {
+  const origin = req.headers.get("origin");
+  if (!origin) {
+    const site = req.headers.get("sec-fetch-site");
+    if (site && site !== "same-origin" && site !== "none") throw new HttpError(403, "bad_origin", "Cross-site request blocked.");
+    return;
+  }
+  if (origin !== new URL(env().APP_URL).origin) throw new HttpError(403, "bad_origin", "Cross-site request blocked.");
 }

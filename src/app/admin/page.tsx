@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
+import { clientIp } from "@/lib/abuse/ip";
+import { env } from "@/lib/env";
 import { getStats } from "@/lib/admin/ops";
 
 export const metadata: Metadata = { title: "Admin" };
@@ -9,6 +12,7 @@ const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "â€
 
 export default async function AdminHome() {
   const s = await getStats();
+  const seenIp = clientIp(await headers());
   const rows: [string, string, string?][] = [
     ["Users", n(s.users), `${n(s.usersLast7d)} new in 7 days`],
     ["Paying users", n(s.payingUsers), "active subscriptions"],
@@ -53,7 +57,11 @@ export default async function AdminHome() {
           </li>
         ))}
       </ol>
-      <p className="mt-6 text-sm text-graphite">Website visitors and traffic sources are in Umami. Stale jobs are cleaned up each time this page loads.</p>
+      <p className="mt-6 text-sm text-graphite">
+        Setup check: the server sees your IP as <b className="text-ink">{seenIp}</b> via the <code>{env().IP_HEADER}</code> header.
+        {seenIp === "unknown" ? " Per-IP sign-up limits are OFF until this shows your real public IP â€” see docs/DEPLOY.md." : " Per-IP limits are working."}
+      </p>
+      <p className="mt-2 text-sm text-graphite">Website visitors and traffic sources are in Umami. Stale jobs are cleaned up each time this page loads.</p>
     </div>
   );
 }

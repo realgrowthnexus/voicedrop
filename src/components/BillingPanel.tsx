@@ -135,7 +135,7 @@ export function BillingPanel({ initial, hasCustomer, paddle: paddleCfg }: { init
 
       <section className="mt-8 rounded-[20px] border border-rule bg-surface p-6" aria-labelledby="current">
         <h2 id="current" className="text-xl font-bold">
-          You're on <span className="marker px-1">{PLAN_NAME[me.tier]}</span>
+          You&apos;re on <span className="marker px-1">{PLAN_NAME[me.tier]}</span>
         </h2>
         {me.plan ? (
           <p className="mt-1 text-graphite">

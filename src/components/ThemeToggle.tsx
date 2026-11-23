@@ -1,21 +1,33 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 type Mode = "system" | "light" | "dark";
 const NEXT: Record<Mode, Mode> = { system: "light", light: "dark", dark: "system" };
 const LABEL: Record<Mode, string> = { system: "Theme: system", light: "Theme: light", dark: "Theme: dark" };
+const EVENT = "vod-theme";
+
+function read(): Mode {
+  try {
+    const t = localStorage.getItem("theme");
+    return t === "light" || t === "dark" ? t : "system";
+  } catch {
+    return "system";
+  }
+}
+
+function subscribe(cb: () => void) {
+  window.addEventListener(EVENT, cb);
+  window.addEventListener("storage", cb);
+  return () => {
+    window.removeEventListener(EVENT, cb);
+    window.removeEventListener("storage", cb);
+  };
+}
 
 export function ThemeToggle() {
-  const [mode, setMode] = useState<Mode>("system");
-  useEffect(() => {
-    try {
-      const t = localStorage.getItem("theme");
-      if (t === "light" || t === "dark") setMode(t);
-    } catch {}
-  }, []);
+  const mode = useSyncExternalStore(subscribe, read, () => "system" as Mode);
   function cycle() {
     const m = NEXT[mode];
-    setMode(m);
     try {
       if (m === "system") {
         localStorage.removeItem("theme");
@@ -25,6 +37,7 @@ export function ThemeToggle() {
         document.documentElement.dataset.theme = m;
       }
     } catch {}
+    window.dispatchEvent(new Event(EVENT));
   }
   return (
     <button

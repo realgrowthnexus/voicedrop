@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Word = { w: string; s: number; e: number };
 type Demo = { duration: number; words: Word[] };
@@ -20,7 +20,6 @@ export function HeroDemo({ fallbackText }: { fallbackText: string }) {
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const audio = useRef<HTMLAudioElement>(null);
-  const raf = useRef<number>(0);
 
   useEffect(() => {
     let alive = true;
@@ -33,12 +32,17 @@ export function HeroDemo({ fallbackText }: { fallbackText: string }) {
     };
   }, [voice]);
 
-  const tick = useCallback(() => {
-    if (audio.current) setTime(audio.current.currentTime);
-    raf.current = requestAnimationFrame(tick);
-  }, []);
-
-  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  // While playing, follow the audio clock every frame.
+  useEffect(() => {
+    if (!playing) return;
+    let id = 0;
+    const loop = () => {
+      if (audio.current) setTime(audio.current.currentTime);
+      id = requestAnimationFrame(loop);
+    };
+    id = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(id);
+  }, [playing]);
 
   function toggle() {
     const a = audio.current;
@@ -115,18 +119,10 @@ export function HeroDemo({ fallbackText }: { fallbackText: string }) {
         ref={audio}
         src={`/samples/demo-${voice}.mp3`}
         preload="metadata"
-        onPlay={() => {
-          setPlaying(true);
-          cancelAnimationFrame(raf.current);
-          raf.current = requestAnimationFrame(tick);
-        }}
-        onPause={() => {
-          setPlaying(false);
-          cancelAnimationFrame(raf.current);
-        }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
         onEnded={() => {
           setPlaying(false);
-          cancelAnimationFrame(raf.current);
           setTime(duration);
         }}
       />

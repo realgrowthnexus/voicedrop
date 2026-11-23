@@ -8,7 +8,7 @@ export default async function AdminFlags() {
     <div>
       <h1 className="text-3xl font-extrabold tracking-tight">Flagged scripts</h1>
       <p className="mt-2 max-w-2xl text-graphite">
-        These scripts matched a safety rule. Approve to generate them, or reject to refuse and refund. Ban the user from their page if it's clear abuse.
+        These scripts matched a safety rule. Approve to generate them, or reject to refuse and refund. Ban the user from their page if it&apos;s clear abuse.
       </p>
       {rows.length === 0 ? (
         <p className="mt-8 rounded-[20px] border border-dashed border-graphite/60 p-8 text-center text-graphite">Nothing to review.</p>

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { subscriptions } from "@/db/schema";
 import { paddleApi, priceIdFor } from "@/lib/billing/paddle";
-import { handle, HttpError } from "@/lib/http";
+import { assertSameOrigin, handle, HttpError } from "@/lib/http";
 import { rateLimit } from "@/lib/ratelimit";
 import { requireUser } from "@/lib/session";
 
@@ -14,6 +14,7 @@ const Body = z.object({ plan: z.enum(["creator", "pro"]) });
 
 /** Switch Creator <-> Pro on the existing Paddle subscription (prorated immediately). */
 export const POST = handle(async (req: NextRequest) => {
+  assertSameOrigin(req);
   const u = await requireUser(req.headers);
   if (!(await rateLimit(`change-plan:${u.id}`, 5, 600)).ok) throw new HttpError(429, "rate_limited", "Too many attempts.");
   const parsed = Body.safeParse(await req.json().catch(() => null));

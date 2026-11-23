@@ -78,7 +78,10 @@ function build() {
         create: {
           before: async (u, ctx) => {
             const h = headersOf(ctx);
-            const ipHash = h ? hashIp(clientIp(h)) : null;
+            const ip = h ? clientIp(h) : "unknown";
+            // Without a trusted client IP every visitor would share one bucket and block signups for everyone.
+            if (ip === "unknown") console.warn("[auth] no client IP header (check IP_HEADER); skipping per-IP signup limit");
+            const ipHash = ip !== "unknown" ? hashIp(ip) : null;
             if (ipHash) {
               const [row] = await db()
                 .select({ n: sql<number>`count(*)::int` })

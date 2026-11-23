@@ -194,3 +194,13 @@ describe("jobs service", () => {
     expect(await pumpQueue()).toBe(0);
   });
 });
+
+describe("job API route", () => {
+  it("blocks cross-site POSTs", async () => {
+    const { POST } = await import("@/app/api/jobs/route");
+    const res = await POST(new NextRequest("http://localhost:3000/api/jobs", { method: "POST", body: "{}", headers: { origin: "https://evil.example" } }));
+    expect(res.status).toBe(403);
+    const anon = await POST(new NextRequest("http://localhost:3000/api/jobs", { method: "POST", body: "{}", headers: { origin: "http://localhost:3000" } }));
+    expect(anon.status).toBe(401);
+  });
+});

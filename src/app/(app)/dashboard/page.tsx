@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Studio } from "@/components/Studio";
+import { StudioClient } from "@/components/StudioClient";
 
 export const metadata: Metadata = { title: "Studio" };
 
 export default function DashboardPage() {
-  return <Studio />;
+  return <StudioClient />;
 }

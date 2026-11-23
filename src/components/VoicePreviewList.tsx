@@ -33,9 +33,11 @@ export function VoicePreviewList({
   }
 
   const selectable = !!onSelect;
+  const Wrapper = selectable ? "fieldset" : "div";
   return (
-    <div>
-      <ul className={`grid gap-px overflow-hidden rounded-2xl border border-rule bg-rule ${compact ? "" : "sm:grid-cols-2"}`} role={selectable ? "radiogroup" : undefined} aria-label={selectable ? "Voice" : undefined}>
+    <Wrapper className="min-w-0">
+      {selectable ? <legend className="sr-only">Voice</legend> : null}
+      <ul className={`grid gap-px overflow-hidden rounded-2xl border border-rule bg-rule ${compact ? "" : "sm:grid-cols-2"}`}>
         {VOICES.map((v) => {
           const isSel = selected === v.id;
           return (
@@ -82,6 +84,6 @@ export function VoicePreviewList({
         })}
       </ul>
       <audio ref={audio} onEnded={() => setPlaying(null)} onPause={() => setPlaying(null)} preload="none" />
-    </div>
+    </Wrapper>
   );
 }

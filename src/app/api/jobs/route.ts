@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { handle, HttpError } from "@/lib/http";
+import { assertSameOrigin, handle, HttpError } from "@/lib/http";
 import { createJob, listJobs, toPublicJob } from "@/lib/jobs/service";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export const POST = handle(async (req: NextRequest) => {
+  assertSameOrigin(req);
   const u = await requireUser(req.headers);
   let body: unknown;
   try {
