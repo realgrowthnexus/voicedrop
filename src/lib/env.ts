@@ -15,6 +15,8 @@ const schema = z
     DATABASE_URL: z.string().min(1),
     BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 chars"),
     IP_HASH_SECRET: z.string().min(16),
+    /** Header carrying the real client IP. Hostinger: x-forwarded-for; behind Cloudflare proxy: cf-connecting-ip. */
+    IP_HEADER: z.string().default("x-forwarded-for").transform((s) => s.toLowerCase()),
     ADMIN_EMAILS: z
       .string()
       .default("")
