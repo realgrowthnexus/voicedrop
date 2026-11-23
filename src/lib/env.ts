@@ -58,6 +58,13 @@ const schema = z
     /** Spend guard: max characters generated across all users per rolling 24h. 0 = unlimited. */
     GLOBAL_DAILY_CHAR_LIMIT: z.coerce.number().int().min(0).default(3_000_000),
 
+    /** Hard GPU spend budget in USD (lifetime, raise it to allow more). New jobs stop at 95% of it. 0 = no budget. */
+    GPU_BUDGET_USD: z.coerce.number().min(0).default(25),
+    /** RunPod price of the endpoint's GPU in USD per second (flex). */
+    GPU_PRICE_PER_SEC: z.coerce.number().min(0).default(0.00031),
+    /** Endpoint idle timeout in seconds: billed after each job before the worker scales down. */
+    GPU_IDLE_TIMEOUT_SEC: z.coerce.number().min(0).default(5),
+
     NEXT_PUBLIC_UMAMI_SRC: optStr,
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: optStr,
 

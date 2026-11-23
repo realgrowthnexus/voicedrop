@@ -16,6 +16,7 @@ import { rateLimit } from "@/lib/ratelimit";
 import { CONTENT_TYPES, jobFileKey, storage } from "@/lib/storage";
 import { ttsBackend, webhookUrl, type StatusResult } from "@/lib/tts";
 import type { JobStatus, PublicJob } from "@/lib/client-types";
+import { actualJobCost, budgetActive, budgetAllows, recordJobCost } from "./budget";
 
 export const RECONCILE_AFTER_MS = 2 * 60 * 1000;
 export const STALE_AFTER_MS = 15 * 60 * 1000;
@@ -75,6 +76,9 @@ export async function createJob(u: User, body: unknown, headers: Headers): Promi
 
   const trimmed = text.trim();
   const chars = countChars(trimmed);
+  if (!(await budgetAllows(chars))) {
+    throw new HttpError(503, "busy", "Voice generation is paused for now. Please try again later.");
+  }
   const screening = screenScript(trimmed);
   const r = await reserveAndCreateJob(
     u.id,
@@ -110,6 +114,10 @@ async function failAndRefund(jobId: string, message: string): Promise<boolean> {
 }
 
 async function dispatch(job: Job): Promise<void> {
+  if (!(await budgetAllows(job.chars, true))) {
+    await failAndRefund(job.id, "Voice generation is paused for now. Your characters were refunded.");
+    return;
+  }
   try {
     const st = storage();
     const formats = job.formats as Format[];
@@ -158,6 +166,15 @@ export async function pumpQueue(): Promise<number> {
 
 /** Apply a terminal backend result. Idempotent: only a processing job changes. */
 export async function finalizeJob(jobId: string, result: StatusResult): Promise<void> {
+  const terminal = ["COMPLETED", "FAILED", "CANCELLED", "TIMED_OUT"].includes(result.status);
+  if (terminal && budgetActive()) {
+    // Count GPU time once, whatever the outcome (failed runs are billed too).
+    const [j] = await db().select({ chars: jobs.chars, cost: jobs.gpuCostMicros, status: jobs.status }).from(jobs).where(eq(jobs.id, jobId));
+    if (j && j.cost == null && j.status === "processing") {
+      const c = actualJobCost(result.executionTime, result.delayTime, j.chars);
+      await recordJobCost(jobId, c.gpuMs, c.micros);
+    }
+  }
   if (result.status === "COMPLETED") {
     const out = result.output;
     const [job] = await db().select().from(jobs).where(eq(jobs.id, jobId));
@@ -205,6 +222,10 @@ export async function reconcileJob(job: Job, now = new Date()): Promise<Job> {
       }
     }
     if (age > STALE_AFTER_MS) {
+      if (budgetActive() && job.gpuCostMicros == null) {
+        const c = actualJobCost(STALE_AFTER_MS, 0, job.chars);
+        await recordJobCost(job.id, c.gpuMs, c.micros);
+      }
       await failAndRefund(job.id, "This voice-over took too long and was cancelled. Your characters were refunded.");
     }
   }

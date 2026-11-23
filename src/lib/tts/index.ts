@@ -21,7 +21,15 @@ export type JobOutput = {
 };
 
 export type BackendStatus = "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED" | "TIMED_OUT";
-export type StatusResult = { id: string; status: BackendStatus; output?: JobOutput; error?: string };
+export type StatusResult = {
+  id: string;
+  status: BackendStatus;
+  output?: JobOutput;
+  error?: string;
+  /** RunPod reports these (ms) on /status and in webhooks. */
+  executionTime?: number;
+  delayTime?: number;
+};
 
 export interface TtsBackend {
   submit(input: JobInput, webhookUrl: string): Promise<{ id: string }>;
