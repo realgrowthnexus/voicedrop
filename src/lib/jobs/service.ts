@@ -15,6 +15,7 @@ import { SUBMIT_ERROR_MESSAGES, type SubmitErrorCode } from "@/lib/quota/rules";
 import { rateLimit } from "@/lib/ratelimit";
 import { CONTENT_TYPES, jobFileKey, storage } from "@/lib/storage";
 import { ttsBackend, webhookUrl, type StatusResult } from "@/lib/tts";
+import type { JobStatus, PublicJob } from "@/lib/client-types";
 
 export const RECONCILE_AFTER_MS = 2 * 60 * 1000;
 export const STALE_AFTER_MS = 15 * 60 * 1000;
@@ -42,27 +43,12 @@ const ERROR_STATUS: Record<SubmitErrorCode | "busy" | "not_found", number> = {
   not_found: 401,
 };
 
-export type PublicJob = {
-  id: string;
-  status: Job["status"];
-  voice: string;
-  voiceName: string;
-  speed: number;
-  chars: number;
-  formats: Format[];
-  preview: string;
-  durationSec: number | null;
-  error: string | null;
-  createdAt: string;
-  finishedAt: string | null;
-  expiresAt: string;
-  expired: boolean;
-};
+export type { PublicJob } from "@/lib/client-types";
 
 export function toPublicJob(j: Job, now = new Date()): PublicJob {
   return {
     id: j.id,
-    status: j.status,
+    status: j.status as JobStatus,
     voice: j.voice,
     voiceName: voiceById(j.voice)?.name ?? j.voice,
     speed: j.speed,
