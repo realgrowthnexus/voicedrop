@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* VoiceoverDrop tokens — "script + highlighter".
+   Ink on cool paper; a marker-yellow highlight is the only loud colour. */
+:root {
+  --paper: #f4f5f8;
+  --surface: #ffffff;
+  --ink: #171a33;
+  --graphite: #555a75;
+  --rule: #d9dce6;
+  --marker: #ffe14d;
+  --marker-ink: #171a33;
+  --ok: #1f7a4d;
+  --danger: #b42318;
+  --focus: #2f55d4;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11132a;
+    --surface: #1a1d38;
+    --ink: #eef0f7;
+    --graphite: #a3a8c3;
+    --rule: #2c3054;
+    --marker: #f2d33d;
+    --marker-ink: #11132a;
+    --ok: #4ade80;
+    --danger: #f87171;
+    --focus: #8ea6ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11132a;
+  --surface: #1a1d38;
+  --ink: #eef0f7;
+  --graphite: #a3a8c3;
+  --rule: #2c3054;
+  --marker: #f2d33d;
+  --marker-ink: #11132a;
+  --ok: #4ade80;
+  --danger: #f87171;
+  --focus: #8ea6ff;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-graphite: var(--graphite);
+  --color-rule: var(--rule);
+  --color-marker: var(--marker);
+  --color-marker-ink: var(--marker-ink);
+  --color-ok: var(--ok);
+  --color-danger: var(--danger);
+  --color-focus: var(--focus);
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-courier), "Courier New", ui-monospace, monospace;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--marker);
+  color: var(--marker-ink);
+}
+
+/* Highlighter stroke used for spoken words and key emphasis. */
+.marker {
+  background-image: linear-gradient(transparent 12%, var(--marker) 12%, var(--marker) 88%, transparent 88%);
+  color: var(--marker-ink);
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.script-text {
+  font-family: var(--font-script);
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

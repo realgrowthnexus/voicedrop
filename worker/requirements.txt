@@ -1,0 +1,8 @@
+# Shared runtime deps (pinned). onnxruntime flavour is installed separately:
+#   CPU (dev/tests):  onnxruntime==1.32.0
+#   GPU (RunPod):     onnxruntime-gpu[cuda,cudnn]==1.32.0
+espeakng-loader==0.2.4
+numpy==2.4.6
+phonemizer==3.6.0
+requests==2.34.2
+runpod==2.4.0

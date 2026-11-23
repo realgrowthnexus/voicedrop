@@ -1,0 +1,61 @@
+# BRAIN — VoiceoverDrop project memory
+
+Read this first in any new session. Never write secret values here.
+
+## Owner
+- Non-developer. Talk in Roman Urdu or simple English (no Hindi/Devanagari). One question at a
+  time via multiple-choice, recommended option first. Ask before spending money / public actions.
+- Owner runs VPS commands in Hostinger browser terminal — give one paste-ready command at a time.
+
+## Hard constraints
+- VPS (Hostinger, 4 CPU/15 GB) runs `juc-*` (+ Caddy on 80/443) and `ots-*`
+  (/opt/overthought-studio). NEVER stop/edit/reconfigure them. v1 does not use the VPS at all.
+- Supabase free slots are full (limit is per user, across orgs) → not used.
+- Dev branch: `claude/voicedrop-saas-build-9ldp5p`; PR realgrowthnexus/voicedrop#1 (draft).
+- Cloud session network: personal environment "voicedrop" allows huggingface.co + us.aws.cdn.hf.co
+  (model download). developer.paddle.com is NOT reachable → Paddle details were taken from the
+  official `@paddle/paddle-node-sdk` source in node_modules.
+
+## Decisions (2026-11-23)
+Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/superpowers/plans/2026-11-23-voiceoverdrop-v1.md`.
+- Brand **VoiceoverDrop** (owner confirmed; "VoiceDrop" is taken by a US company). One constant: `src/lib/brand.ts`.
+- Domain `voiceoverdrop.com` (available 2026-11-23, NOT bought yet — owner buys).
+- Target: YouTubers/TikTokers. English only. 12 Kokoro voices (`src/lib/plans.ts` VOICES, worker `engine.py` VOICE_MAP).
+- Free 3k chars/rolling week (1.5k/request, MP3). Creator $9=100k/period, Pro $19=300k/period,
+  Pack $5=50k never expire. Daily caps 25k/60k/25k (rolling 24h). Paid/pack 10k/request + WAV + SRT.
+- Commercial use allowed for everyone (owner choice).
+- Login: Google + magic link (Better Auth 1.7). Payments: Paddle (MoR, Pakistan OK, Payoneer payout).
+- Stack: Next.js 16.4 on Hostinger Web App, Neon Postgres (Drizzle), Cloudflare R2, RunPod GPU
+  serverless (owner chose GPU over VPS), Resend, Turnstile, Umami self-hosted.
+
+## Architecture notes (things a new session must know)
+- Generation is async: `createJob` → ledger reserve (row lock on user) → `pumpQueue` dispatch
+  (paid first; free only while < FREE_MAX_INFLIGHT processing) → RunPod `/run` with HMAC'd
+  webhook URL → worker PUTs files to presigned URLs → `/api/webhooks/runpod` → `finalizeJob`.
+  Missed webhooks are healed by `reconcileJob` when the client polls (2 min → ask RunPod; 15 min → fail+refund).
+- Ledger is append-only (`credit_ledger`); refunds mirror charges with the same `effective_at`.
+- Paddle events are applied exactly once (`paddle_events` PK) and older subscription events are ignored.
+- Checkout transactions are created server-side (`/api/billing/checkout`) so price + userId can't be tampered with.
+- Dev/test backends: `TTS_BACKEND=local` (worker/local_server.py), `STORAGE_BACKEND=local` (/api/dev-storage),
+  `EMAIL_BACKEND=log` (links in log + `dev_email` events), `CAPTCHA_DISABLED=1`. All refused in production
+  unless `ALLOW_DEV_BACKENDS=1` (only used by e2e).
+- Client IP: right-most *public* address in `IP_HEADER`; private/unknown → per-IP signup limit skipped
+  (warns). Admin overview shows "Setup check" with the IP the server sees — verify after deploy.
+- Next 16 gotchas: layouts are not a security boundary → every admin page calls `requireAdminPage()`.
+  Raw `sql` fragments can't bind JS Dates with postgres.js → use ISO strings (`at()` in ledger.ts).
+- Docker image can't be built in the cloud sandbox (no network inside docker build); RunPod builds it.
+
+## State (2026-11-23)
+- v1 code complete on the branch: worker, quota/ledger, auth+abuse, jobs pipeline, Paddle billing, UI
+  (landing w/ live highlighted demo, studio, history, billing, legal), admin panel, e2e.
+- Tests: `npm test` 70 passing (needs local Postgres), `worker` pytest 21 passing, Playwright e2e 6
+  passing on a production build with the real Kokoro worker. Lint + typecheck clean.
+- Measured CPU speed: RTF ≈ 0.22 on 4 cores (1 min audio ≈ 13 s). GPU speed not yet measured.
+- Security review done; fixed: admin pages relied on layout check (now per-page), added CSRF origin
+  checks, IP detection hardening.
+
+## Next steps
+1. Owner: buy domain, create accounts (Neon, Cloudflare R2+Turnstile, Resend, Google OAuth, RunPod, Paddle) — `docs/DEPLOY.md`.
+2. Owner: legal entity name/country for policy pages (`NEXT_PUBLIC_LEGAL_ENTITY`, `NEXT_PUBLIC_LEGAL_COUNTRY`).
+3. Deploy to Hostinger, run smoke test, measure real GPU cost/latency, then switch Paddle to production.
+4. Later: Urdu/Hindi voices (needs another model), team seats, API.
