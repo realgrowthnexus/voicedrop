@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { accountSummary } from "@/lib/account/summary";
 import { banAction, compPlanAction, creditsAction, unbanAction } from "@/lib/admin/actions";
 import { userDetail } from "@/lib/admin/ops";
+import { requireAdminPage } from "@/lib/session";
 
 const n = (x: number) => x.toLocaleString("en-US");
 const t = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace("T", " ") : "–");
@@ -9,6 +10,7 @@ const btn = "h-10 rounded-full px-4 text-sm font-semibold";
 const input = "h-10 rounded-xl border border-rule bg-surface px-3 text-sm";
 
 export default async function AdminUser({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPage();
   const { id } = await params;
   const d = await userDetail(id);
   if (!d) notFound();

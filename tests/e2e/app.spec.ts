@@ -21,6 +21,10 @@ test("signed-out visitors are sent to sign in, admin is hidden", async ({ page }
   await expect(page).toHaveURL(/\/login$/);
   const res = await page.goto("/admin");
   expect(res?.status()).toBe(404);
+  // A forged router-state header must not let the admin page render without its layout check.
+  const tree = encodeURIComponent(JSON.stringify(["", { children: ["admin", { children: ["users", { children: ["__PAGE__", {}] }] }] }, null, null, true]));
+  const rsc = await page.request.get("/admin/users?q=", { headers: { RSC: "1", "Next-Router-State-Tree": tree } });
+  expect(await rsc.text()).not.toContain("@gmail.com");
 });
 
 test("free user: sign in, generate, play and download an MP3", async ({ page }) => {

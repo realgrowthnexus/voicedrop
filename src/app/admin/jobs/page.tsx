@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { listJobsAdmin } from "@/lib/admin/ops";
+import { requireAdminPage } from "@/lib/session";
 
 const STATUSES = ["", "held", "queued", "processing", "done", "failed", "rejected"];
 
 export default async function AdminJobs({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  await requireAdminPage();
   const { status = "" } = await searchParams;
   const rows = await listJobsAdmin(STATUSES.includes(status) && status ? status : null);
   return (

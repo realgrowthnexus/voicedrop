@@ -4,6 +4,7 @@ import Link from "next/link";
 import { clientIp } from "@/lib/abuse/ip";
 import { env } from "@/lib/env";
 import { getStats } from "@/lib/admin/ops";
+import { requireAdminPage } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -11,6 +12,7 @@ const n = (x: number) => x.toLocaleString("en-US");
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "–");
 
 export default async function AdminHome() {
+  await requireAdminPage();
   const s = await getStats();
   const seenIp = clientIp(await headers());
   const rows: [string, string, string?][] = [

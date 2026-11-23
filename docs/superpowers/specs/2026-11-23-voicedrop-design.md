@@ -1,6 +1,6 @@
 # VoiceDrop — Product Spec & Design (v1)
 
-Date: 2026-11-23 · Status: **draft, waiting for owner "go"**
+Date: 2026-11-23 · Status: **approved (owner "go", brand = VoiceoverDrop)** — implemented on branch claude/voicedrop-saas-build-9ldp5p
 
 ## 1. Intent
 

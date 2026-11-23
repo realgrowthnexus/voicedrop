@@ -1,6 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { user, type User } from "@/db/schema";
 import { auth } from "@/lib/auth";
@@ -30,5 +31,15 @@ export function isAdminEmail(email: string): boolean {
 export async function requireAdmin(reqHeaders?: Headers): Promise<User> {
   const u = await requireUser(reqHeaders);
   if (!u.emailVerified || !isAdminEmail(u.email)) throw new HttpError(403, "forbidden", "Admins only.");
+  return u;
+}
+
+/**
+ * For admin pages: 404 unless the viewer is an admin. Call it in EVERY admin page,
+ * not only the layout — layouts are not re-rendered on client navigation.
+ */
+export async function requireAdminPage(): Promise<User> {
+  const u = await getUser();
+  if (!u || u.banned || !u.emailVerified || !isAdminEmail(u.email)) notFound();
   return u;
 }

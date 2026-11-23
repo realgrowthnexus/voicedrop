@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { searchUsers } from "@/lib/admin/ops";
+import { requireAdminPage } from "@/lib/session";
 
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  await requireAdminPage();
   const { q = "" } = await searchParams;
   const users = await searchUsers(q);
   return (

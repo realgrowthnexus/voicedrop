@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { moderateAction } from "@/lib/admin/actions";
 import { listJobsAdmin } from "@/lib/admin/ops";
+import { requireAdminPage } from "@/lib/session";
 
 export default async function AdminFlags() {
+  await requireAdminPage();
   const rows = await listJobsAdmin("held");
   return (
     <div>

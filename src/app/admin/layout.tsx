@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
-import { getUser, isAdminEmail } from "@/lib/session";
+import { requireAdminPage } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const u = await getUser();
-  if (!u || u.banned || !u.emailVerified || !isAdminEmail(u.email)) notFound();
+  const u = await requireAdminPage();
   return (
     <>
       <AppHeader email={u.email} isAdmin />
