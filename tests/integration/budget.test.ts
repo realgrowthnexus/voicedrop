@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { closeDb, db } from "@/db";
 import { jobs } from "@/db/schema";
@@ -17,13 +17,21 @@ function runpodEnv(over: Record<string, string>) {
 }
 const body = { text: "Hello there, this is a short budget test.", voice: "af_heart", formats: ["mp3"] };
 let submitted: JobInput[] = [];
+let billedUsd = 0;
 
 beforeEach(async () => {
   await resetDb();
   submitted = [];
+  billedUsd = 0;
+  (globalThis as { __vdRunpodSpend?: unknown }).__vdRunpodSpend = undefined;
+  vi.stubGlobal("fetch", async (url: string) => {
+    if (!String(url).startsWith("https://api.runpod.io/v2/billing/serverless")) throw new Error(`unexpected fetch ${url}`);
+    return new Response(JSON.stringify({ records: [], metadata: { totals: { totalAmount: billedUsd } } }), { status: 200 });
+  });
   setTtsBackendForTests({ submit: async (i) => (submitted.push(i), { id: `rp-${submitted.length}` }), status: async (id) => ({ id, status: "IN_PROGRESS" }) });
 });
 afterEach(() => {
+  vi.unstubAllGlobals();
   setTtsBackendForTests(null);
   process.env = { ...saved };
   resetEnvCache();
@@ -63,6 +71,17 @@ describe("GPU budget guard", () => {
     expect((await createJob(a, body, new Headers())).status).toBe("processing");
     const err = await createJob(b, body, new Headers()).catch((e) => e);
     expect((err as HttpError).status).toBe(503);
+  });
+
+  it("uses RunPod's real bill when it is higher than our estimate", async () => {
+    runpodEnv({ GPU_BUDGET_USD: "25" });
+    billedUsd = 23.9; // above the $23.75 stop line
+    const u = await createUser();
+    const err = await createJob(u, body, new Headers()).catch((e) => e);
+    expect((err as HttpError).status).toBe(503);
+    const s = await budgetState();
+    expect(s.billedUsd).toBe(23.9);
+    expect(s.spentUsd).toBe(23.9);
   });
 
   it("is off for the local backend", async () => {

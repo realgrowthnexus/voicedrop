@@ -64,6 +64,8 @@ const schema = z
     GPU_PRICE_PER_SEC: z.coerce.number().min(0).default(0.00031),
     /** Endpoint idle timeout in seconds: billed after each job before the worker scales down. */
     GPU_IDLE_TIMEOUT_SEC: z.coerce.number().min(0).default(5),
+    /** RFC 3339 start of the budget window for RunPod's billing API (e.g. the endpoint's creation day). */
+    GPU_BUDGET_SINCE: optStr,
 
     NEXT_PUBLIC_UMAMI_SRC: optStr,
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: optStr,

@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { jobs } from "@/db/schema";
 import { env } from "@/lib/env";
+import { runpodActualSpendUsd } from "./runpod-billing";
 
 /** New jobs stop once committed + in-flight spend would pass this share of the budget. */
 export const BUDGET_STOP_RATIO = 0.95;
@@ -36,9 +37,19 @@ export function actualJobCost(executionMs: number | undefined, delayMs: number |
   return { gpuMs, micros: Math.ceil((gpuMs / 1000) * env().GPU_PRICE_PER_SEC * 1e6) };
 }
 
-export type BudgetState = { budgetUsd: number; spentUsd: number; inflightUsd: number; stopAtUsd: number; active: boolean };
+export type BudgetState = {
+  budgetUsd: number;
+  /** max(our estimate, RunPod's billed amount) — whichever is higher. */
+  spentUsd: number;
+  estimatedUsd: number;
+  billedUsd: number | null;
+  inflightUsd: number;
+  stopAtUsd: number;
+  active: boolean;
+};
 
 export async function budgetState(): Promise<BudgetState> {
+  const billed = budgetActive() ? await runpodActualSpendUsd() : null;
   const [row] = await db()
     .select({
       spent: sql<number>`coalesce(sum(${jobs.gpuCostMicros}), 0)::bigint`,
@@ -51,7 +62,9 @@ export async function budgetState(): Promise<BudgetState> {
   const inflight = inflightSec * e.GPU_PRICE_PER_SEC * 1e6;
   return {
     budgetUsd: e.GPU_BUDGET_USD,
-    spentUsd: Number(row?.spent ?? 0) / 1e6,
+    spentUsd: Math.max(Number(row?.spent ?? 0) / 1e6, billed ?? 0),
+    estimatedUsd: Number(row?.spent ?? 0) / 1e6,
+    billedUsd: billed,
     inflightUsd: inflight / 1e6,
     stopAtUsd: e.GPU_BUDGET_USD * BUDGET_STOP_RATIO,
     active: budgetActive(),
