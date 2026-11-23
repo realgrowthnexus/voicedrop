@@ -48,9 +48,10 @@ Your VPS (`juc-*`, `ots-*`, Caddy) is **not used** by VoiceoverDrop.
    5. Create a client-side token for `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`.
    6. Create an API key for `PADDLE_API_KEY`. It needs transactions (write), customers (read), customer portal sessions (write) and subscriptions (write).
 9. **Hostinger Web App.**
-   1. Add a website, choose *Node.js*, import from GitHub (`realgrowthnexus/voicedrop`, branch `main`) and select Node 22.
-   2. Set the build command to `npm run build` and the start command to `npm start`. The start command runs database migrations automatically.
-   3. Add every variable from the table below, then attach the domain and SSL.
+   1. Make the upload file: `npm run package:hostinger` creates `dist/voiceoverdrop-web.zip` (git-tracked web files only; never `.env`, tests or the worker).
+   2. In hPanel: *Websites → Add website → Node.js Web App → Upload files* and upload the ZIP. Use Node 22, install `npm ci`, build `npm run build` and start `npm run start -- -p $PORT`.
+   3. The start command runs database migrations automatically. This flow was verified locally: production-only `npm ci`, then build, then start.
+   4. Add every variable from the table below, then attach `voice.smmpakservices.com` and SSL. To update later, upload a new ZIP from *Deployments → Redeploy*.
 10. **Umami analytics** (optional).
     1. Deploy Umami as a second Node.js app on Hostinger at `stats.smmpakservices.com`, with its own free Neon project.
     2. Set `NEXT_PUBLIC_UMAMI_SRC` and `NEXT_PUBLIC_UMAMI_WEBSITE_ID`, then redeploy VoiceoverDrop.
@@ -62,7 +63,6 @@ Your VPS (`juc-*`, `ots-*`, Caddy) is **not used** by VoiceoverDrop.
 
 | Name | Value |
 |---|---|
-| `NODE_ENV` | `production` |
 | `APP_URL` | `https://voice.smmpakservices.com` |
 | `DATABASE_URL` | Neon pooled connection string |
 | `BETTER_AUTH_SECRET` | 32+ random characters (`openssl rand -base64 32`) |
