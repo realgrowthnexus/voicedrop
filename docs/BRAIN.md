@@ -54,6 +54,22 @@ Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/super
 - Security review done; fixed: admin pages relied on layout check (now per-page), added CSRF origin
   checks, IP detection hardening.
 
+## Free-deploy / RunPod phase (2026-11-23, after PR #1 merged)
+- Owner renamed the GitHub repo to `realgrowthnexus/voiceoverdrop` (old URL redirects; this
+  session's GitHub tools are scoped to the old name, so Actions status can't be read here).
+- Owner wants $0 hosting where possible; Hugging Face now needs PRO ($9/mo) for new Docker Spaces.
+- Voice engine = RunPod serverless with a **hard $25 budget** (owner rule: never spend more):
+  1. App guard `src/lib/jobs/budget.ts`: per-job GPU cost recorded from RunPod executionTime +
+     delayTime + idle tail; new jobs refused at 95% ($23.75) incl. in-flight estimates.
+  2. Second guard `src/lib/jobs/runpod-billing.ts`: RunPod's real billed amount for the endpoint
+     (`GET api.runpod.io/v2/billing/serverless?serverlessId=`); spend = max(estimate, billed).
+  3. Endpoint caps: max 1 worker, idle 5 s, execution timeout 300 s.
+  - RunPod account balance is ~$212 (shared with other projects), so prepaid balance is NOT the cap.
+- Worker image: GitHub Actions `.github/workflows/worker-image.yml` → `ghcr.io/realgrowthnexus/voiceoverdrop-worker:{sha,dev,latest}`.
+  Package must be made **public** (or RunPod given a registry credential) before the endpoint can pull it.
+- GPU choice: pools AMPERE_16 ($0.58/h) + AMPERE_24 ($0.75/h) fallback; budget uses $0.00021/s.
+- Owner pasted a RunPod API key in chat → must be **rotated** after setup (create a new key, delete the old one).
+
 ## Next steps
 1. Owner: buy domain, create accounts (Neon, Cloudflare R2+Turnstile, Resend, Google OAuth, RunPod, Paddle) — `docs/DEPLOY.md`.
 2. Owner: legal entity name/country for policy pages (`NEXT_PUBLIC_LEGAL_ENTITY`, `NEXT_PUBLIC_LEGAL_COUNTRY`).
