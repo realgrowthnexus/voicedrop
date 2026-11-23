@@ -19,7 +19,7 @@ Read this first in any new session. Never write secret values here.
 ## Decisions (2026-11-23)
 Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/superpowers/plans/2026-11-23-voiceoverdrop-v1.md`.
 - Brand **VoiceoverDrop** (owner confirmed; "VoiceDrop" is taken by a US company). One constant: `src/lib/brand.ts`.
-- Domain `voiceoverdrop.com` (available 2026-11-23, NOT bought yet — owner buys).
+- Domain for now: `voice.smmpakservices.com` (owner's existing domain, DNS in Hostinger). `voiceoverdrop.com` not bought.
 - Target: YouTubers/TikTokers. English only. 12 Kokoro voices (`src/lib/plans.ts` VOICES, worker `engine.py` VOICE_MAP).
 - Free 3k chars/rolling week (1.5k/request, MP3). Creator $9=100k/period, Pro $19=300k/period,
   Pack $5=50k never expire. Daily caps 25k/60k/25k (rolling 24h). Paid/pack 10k/request + WAV + SRT.
