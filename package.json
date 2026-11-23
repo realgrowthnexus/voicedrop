@@ -8,16 +8,21 @@
     "start": "node scripts/migrate.mjs && next start",
     "lint": "eslint",
     "test": "vitest run",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit -p tsconfig.check.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.mjs",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "package:hostinger": "bash scripts/package-hostinger.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1175.0",
     "@aws-sdk/s3-request-presigner": "^3.1175.0",
     "@paddle/paddle-js": "^1.6.6",
     "@paddle/paddle-node-sdk": "^3.12.0",
+    "@tailwindcss/turbopack": "4.3.3",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "better-auth": "^1.7.27",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.6",
@@ -26,21 +31,20 @@
     "react-dom": "19.3.0",
     "resend": "^6.39.0",
     "server-only": "^0.0.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "^5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.63.0",
-    "@tailwindcss/turbopack": "4.3.3",
-    "@types/node": "^22.20.5",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
-    "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^5",
     "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=20.9"
   }
 }
