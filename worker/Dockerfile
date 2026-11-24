@@ -12,8 +12,7 @@ RUN apt-get update \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt \
- && pip install "onnxruntime-gpu[cuda,cudnn]==1.32.0" \
- && pip install --no-deps kokoro-onnx==0.6.1
+ && pip install "onnxruntime-gpu[cuda,cudnn]==1.32.0"
 
 # Model files are pinned by revision + sha256 (build fails on mismatch).
 COPY scripts/fetch_models.py scripts/fetch_models.py

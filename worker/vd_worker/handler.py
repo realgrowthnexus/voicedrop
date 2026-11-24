@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import time
-from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -12,6 +11,7 @@ import requests
 
 from .audio import to_mp3_bytes, to_wav_bytes
 from .engine import VOICE_MAP, Engine
+from .models import resolve_model_dir
 from .pipeline import synthesize
 from .srt import build_srt
 
@@ -21,15 +21,10 @@ CONTENT_TYPES = {"mp3": "audio/mpeg", "wav": "audio/wav", "srt": "application/x-
 _engine: Engine | None = None
 
 
-def model_dir() -> Path:
-    return Path(os.environ.get("VD_MODEL_DIR", Path(__file__).resolve().parent.parent / "models"))
-
-
 def get_engine() -> Engine:
     global _engine
     if _engine is None:
-        d = model_dir()
-        _engine = Engine(str(d / "model.onnx"), str(d / "voices-v1.0.bin"))
+        _engine = Engine(resolve_model_dir())
     return _engine
 
 

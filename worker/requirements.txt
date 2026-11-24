@@ -6,3 +6,5 @@ numpy==2.4.6
 phonemizer==3.6.0
 requests==2.34.2
 runpod==2.4.0
+
+imageio-ffmpeg==0.8.1
