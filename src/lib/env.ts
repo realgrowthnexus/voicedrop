@@ -1,9 +1,27 @@
 import "server-only";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { SITE_URL } from "@/lib/brand";
+
+/** A random 32-byte key kept in DATA_DIR/secret.key (created once, never leaves the server). */
+function installSecret(dataDir: string): string {
+  const file = path.join(dataDir, "secret.key");
+  try {
+    return readFileSync(file, "utf8").trim();
+  } catch {
+    mkdirSync(dataDir, { recursive: true });
+    const key = randomBytes(32).toString("hex");
+    try {
+      writeFileSync(file, key, { mode: 0o600, flag: "wx" });
+      return key;
+    } catch {
+      return readFileSync(file, "utf8").trim(); // another process created it first
+    }
+  }
+}
 
 const bool = z
   .enum(["0", "1", "true", "false", ""])
@@ -18,13 +36,18 @@ const schema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     APP_URL: z.url().default(SITE_URL),
-    DATABASE_URL: z.string().min(1, "DATABASE_URL is not set"),
-    /** Optional: derived from DATABASE_URL when unset (anyone holding the DB URL already controls everything). */
+    /** Postgres server. Leave empty to use the embedded database in DATA_DIR (single server, zero setup). */
+    DATABASE_URL: optStr,
+    /** Where the embedded database, audio files, backups and the generated secret live. */
+    DATA_DIR: optStr,
+    /** Optional: derived from a per-install secret when unset. */
     BETTER_AUTH_SECRET: optStr.pipe(z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 chars").optional()),
     IP_HASH_SECRET: optStr.pipe(z.string().min(16).optional()),
     RUNPOD_WEBHOOK_SECRET: optStr.pipe(z.string().min(16).optional()),
     /** Header carrying the real client IP. Hostinger: x-forwarded-for; behind Cloudflare proxy: cf-connecting-ip. */
     IP_HEADER: z.string().default("x-forwarded-for").transform((s) => s.toLowerCase()),
+    /** Password for the first ADMIN_EMAILS address; the account is created/synced on every start. */
+    ADMIN_PASSWORD: optStr.pipe(z.string().min(10, "ADMIN_PASSWORD must be at least 10 characters").optional()),
     ADMIN_EMAILS: z
       .string()
       .default("")
@@ -70,14 +93,19 @@ const schema = z
       issue("R2_* variables are required when STORAGE_BACKEND=r2");
   })
   .transform((e) => {
-    const derive = (purpose: string) => createHmac("sha256", e.DATABASE_URL).update(`voicedrop:${purpose}`).digest("hex");
+    const dataDir = path.resolve(e.DATA_DIR ?? (e.NODE_ENV === "production" ? path.join(homedir(), "voicedrop-data") : ".data"));
+    // Root secret: the DB URL (holding it already means full control) or a random key created on first boot.
+    const root = e.DATABASE_URL ?? installSecret(dataDir);
+    const derive = (purpose: string) => createHmac("sha256", root).update(`voicedrop:${purpose}`).digest("hex");
     return {
       ...e,
+      DATA_DIR: dataDir,
+      EMBEDDED_DB_DIR: path.join(dataDir, "db"),
       BETTER_AUTH_SECRET: e.BETTER_AUTH_SECRET ?? derive("auth"),
       IP_HASH_SECRET: e.IP_HASH_SECRET ?? derive("ip-hash"),
       RUNPOD_WEBHOOK_SECRET: e.RUNPOD_WEBHOOK_SECRET ?? derive("runpod-webhook"),
       LOCAL_STORAGE_DIR:
-        e.LOCAL_STORAGE_DIR ?? (e.NODE_ENV === "production" ? path.join(homedir(), "voicedrop-storage") : ".data/storage"),
+        e.LOCAL_STORAGE_DIR ?? (e.NODE_ENV === "production" ? path.join(dataDir, "storage") : ".data/storage"),
     };
   });
 
@@ -92,9 +120,39 @@ export function parseEnv(raw: Record<string, string | undefined>): Env {
   return res.data;
 }
 
+/**
+ * Optional `voicedrop.env` next to package.json (KEY=value lines), shipped inside the upload ZIP so the
+ * owner doesn't have to type settings into the host. Real environment variables always win.
+ * Never committed to git; the server never serves files from the project root.
+ */
+export function loadSettingsFile(file = path.join(process.cwd(), "voicedrop.env"), target: Record<string, string | undefined> = process.env): number {
+  let text: string;
+  try {
+    text = readFileSync(file, "utf8");
+  } catch {
+    return 0;
+  }
+  let n = 0;
+  for (const line of text.split(/\r?\n/)) {
+    const m = /^\s*([A-Z][A-Z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
+    if (!m || line.trimStart().startsWith("#")) continue;
+    const value = m[2].replace(/^(['"])(.*)\1$/, "$2");
+    if (target[m[1]] === undefined || target[m[1]] === "") {
+      target[m[1]] = value;
+      n++;
+    }
+  }
+  return n;
+}
+
 let cached: Env | undefined;
+let fileLoaded = false;
 /** Lazily parsed so `next build` works without runtime secrets. */
 export function env(): Env {
+  if (!fileLoaded && process.env.NODE_ENV !== "test") {
+    fileLoaded = true;
+    loadSettingsFile();
+  }
   if (!cached) cached = parseEnv(process.env);
   return cached;
 }

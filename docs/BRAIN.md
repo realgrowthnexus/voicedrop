@@ -122,3 +122,17 @@ Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/super
   FlashBoot keeps old-code workers alive for a while after a deploy; retry.
 - RunPod spend so far ≈ $0.14 (billing API). rest.runpod.io is unreachable from this sandbox; GraphQL at
   api.runpod.io works for reading endpoint config.
+
+## 2026-11-24 — "upload only" (owner can't do accounts)
+- Owner chose the **embedded database** on Hostinger (asked: shipeast-schema vs embedded vs Supabase Pro).
+  `src/db/index.ts`: DATABASE_URL → postgres-js; empty → PGlite 0.5.16 at `DATA_DIR/db` (default
+  `~/voicedrop-data`). `rowsOf()` normalises `execute()` results. **Never query with `db()` inside an open
+  `db().transaction()`** — PGlite runs one transaction at a time and it deadlocks (fixed in billing apply +
+  `track(…, tx)`). Whole vitest suite runs on both: `TEST_DB=embedded npm test`.
+- `src/instrumentation.ts` → `src/lib/bootstrap.ts`: migrations, admin seed (ADMIN_EMAILS[0] + ADMIN_PASSWORD,
+  verified, password re-synced each start), daily `dumpDataDir` backups. `npm start` is now just `next start`.
+- Secrets: random `DATA_DIR/secret.key` when no DATABASE_URL.
+- Email+password auth (Better Auth emailAndPassword, no verification; such users can't be admin).
+- `voicedrop.env` (gitignored) is read by `env()` from the app root; shipped in the ZIP with the owner's
+  admin email/password and the RunPod key. Admin login handed to the owner as a text file.
+- E2E for this exact setup: `npx playwright test -c playwright.embedded.config.ts`.

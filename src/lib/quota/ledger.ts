@@ -1,6 +1,6 @@
 import "server-only";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
-import { db, type Executor, type Tx } from "@/db";
+import { db, type Executor, type Tx, rowsOf } from "@/db";
 import { creditLedger, jobs, subscriptions, user, type Job } from "@/db/schema";
 import { FILE_RETENTION_DAYS, FREE_WEEKLY_CHARS, PLAN_ALLOWANCE, TIERS, type Format, type PaidPlan } from "@/lib/plans";
 import { checkSubmit, type Balances, type SubmitErrorCode } from "./rules";
@@ -89,8 +89,8 @@ export async function reserveAndCreateJob(
 ): Promise<ReserveResult> {
   const now = opts.now ?? new Date();
   return db().transaction(async (tx) => {
-    const locked = await tx.execute<{ id: string; banned: boolean }>(
-      sql`select id, banned from "user" where id = ${userId} for update`,
+    const locked = rowsOf<{ id: string; banned: boolean }>(
+      await tx.execute(sql`select id, banned from "user" where id = ${userId} for update`),
     );
     const u = locked[0];
     if (!u) return { ok: false, code: "not_found" } as const;

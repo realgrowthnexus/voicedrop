@@ -1,5 +1,20 @@
 # VoiceDrop — go-live guide
 
+## Owner flow (2026-11-24): upload only
+The owner only uploads `VOICEDROP-HOSTINGER-UPLOAD.zip` (Node 22, build `npm run build`, start
+`npm run start -- -p $PORT`). No environment variables are needed:
+- **Database:** built in (PGlite, Postgres 18 in WASM) at `~/voicedrop-data/db`; daily backups in
+  `~/voicedrop-data/backups` (7 kept). Set `DATABASE_URL` only to move to a Postgres server later.
+- **Secrets:** generated on first boot in `~/voicedrop-data/secret.key`.
+- **Login:** email + password (no email service needed); magic link / Google can be switched on later.
+- **Admin + RunPod key:** shipped inside the ZIP as `voicedrop.env` (built by Claude with
+  `SETTINGS_FILE=... npm run package:hostinger`; never in git). The admin account is created/synced at
+  every start from `ADMIN_EMAILS` + `ADMIN_PASSWORD`.
+- Embedded mode needs a single Node process (Hostinger runs one). Do not run two copies on the same data.
+
+The sections below describe the optional services (they can all be added later in Admin → Settings).
+
+
 The owner's checklist. **Never paste secret values into chat**; type them only into Hostinger or the site's
 Admin → Settings page. Your VPS (`juc-*`, `ots-*`, Caddy) is **not used** by VoiceDrop.
 

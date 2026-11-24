@@ -16,7 +16,7 @@ export type FieldView = {
 
 const GROUPS: { id: string; title: string; intro: string }[] = [
   { id: "voice", title: "Voice engine", intro: "Needed to generate audio. The RunPod endpoint is already deployed with a $25 spend guard; just add an API key." },
-  { id: "email", title: "Email", intro: "Sends the sign-in links. Hostinger mailbox: host smtp.hostinger.com, port 465, user = the full mailbox address." },
+  { id: "email", title: "Email (optional)", intro: "Only needed for “email me a sign-in link”. Hostinger mailbox: host smtp.hostinger.com, port 465, user = the full mailbox address." },
   { id: "google", title: "Google sign-in (optional)", intro: "Adds a “Continue with Google” button. Redirect URI: https://voicedrop.rest/api/auth/callback/google" },
   { id: "captcha", title: "Bot protection (optional)", intro: "Cloudflare Turnstile on the sign-in form." },
   { id: "payments", title: "Payments (optional)", intro: "Paddle keys and price IDs. Webhook URL: https://voicedrop.rest/api/webhooks/paddle" },
@@ -66,7 +66,7 @@ export function SettingsForm({ fields, emailReady }: { fields: FieldView[]; emai
                     />
                     <p id={`${f.key}-hint`} className="mt-1.5 text-xs text-mute">
                       {f.source === "env"
-                        ? "Set in Hostinger environment variables (change it there)."
+                        ? "Set on the server (upload settings file or environment variable)."
                         : f.help ?? (f.display ? "Saved." : "Not set.")}
                     </p>
                     {f.source === "site" && f.secret ? (

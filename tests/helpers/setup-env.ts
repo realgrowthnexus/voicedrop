@@ -17,3 +17,16 @@ Object.assign(process.env, {
   PADDLE_PRICE_PRO: "pri_pro",
   PADDLE_PRICE_PACK: "pri_pack",
 });
+
+// TEST_DB=embedded runs the same suite on the embedded database (PGlite), one fresh copy per test file.
+if (process.env.TEST_DB === "embedded") {
+  const { mkdtempSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const path = await import("node:path");
+  delete process.env.DATABASE_URL;
+  process.env.DATA_DIR = mkdtempSync(path.join(tmpdir(), "vd-test-"));
+  process.env.LOCAL_STORAGE_DIR = path.join(process.env.DATA_DIR, "storage");
+  const { ensureBooted } = await import("@/lib/bootstrap");
+  await ensureBooted();
+}
+export {};

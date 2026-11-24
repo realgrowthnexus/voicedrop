@@ -50,3 +50,6 @@ __pycache__/
 test-results/
 playwright-report/
 dist/
+
+# owner settings shipped only inside the upload ZIP (never commit)
+voicedrop.env

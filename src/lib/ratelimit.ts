@@ -1,16 +1,16 @@
 import "server-only";
 import { sql } from "drizzle-orm";
-import { db } from "@/db";
+import { db, rowsOf } from "@/db";
 
 export type RateLimitResult = { ok: boolean; remaining: number; retryAfter: number };
 
 /** Fixed-window counter in Postgres. Atomic via upsert ... returning. */
 export async function rateLimit(key: string, limit: number, windowSec: number, now = Date.now()): Promise<RateLimitResult> {
   const windowStart = Math.floor(now / 1000 / windowSec) * windowSec;
-  const rows = await db().execute<{ count: number }>(sql`
+  const rows = rowsOf<{ count: number }>(await db().execute(sql`
     insert into app_rate_limits (key, window_start, count) values (${key}, ${windowStart}, 1)
     on conflict (key, window_start) do update set count = app_rate_limits.count + 1
-    returning count`);
+    returning count`));
   const count = Number(rows[0]?.count ?? 1);
   // Opportunistic cleanup of old windows (cheap, bounded).
   if (Math.random() < 0.01) {

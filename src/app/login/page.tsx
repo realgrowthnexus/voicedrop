@@ -34,7 +34,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <span className="line-mask"><span style={{ ["--d" as string]: "90ms" }}>an account.</span></span>
           </h1>
           <p className="fade-in mt-4 text-mute" style={{ ["--d" as string]: "250ms" }}>
-            No password needed. New here? You start with 3,000 free characters every week.
+            New here? Create an account and get 3,000 free characters every week.
           </p>
           {code ? (
             <p role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3">

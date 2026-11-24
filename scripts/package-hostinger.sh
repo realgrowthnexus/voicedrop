@@ -22,4 +22,14 @@ fi
 
 rm -f "$OUT"
 zip -q -X "$OUT" -@ < "$LIST"
+
+# Optional owner settings (admin login, RunPod key): SETTINGS_FILE=/path/to/file adds it as voicedrop.env.
+# Kept out of git; lives only inside the ZIP the owner uploads.
+if [ -n "${SETTINGS_FILE:-}" ]; then
+  TMPD="$(mktemp -d)"
+  cp "$SETTINGS_FILE" "$TMPD/voicedrop.env"
+  (cd "$TMPD" && zip -q -X "$OLDPWD/$OUT" voicedrop.env)
+  rm -rf "$TMPD"
+  echo "added owner settings as voicedrop.env"
+fi
 echo "wrote $OUT ($(wc -l < "$LIST") files, $(du -h "$OUT" | cut -f1))"

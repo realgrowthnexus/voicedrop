@@ -41,7 +41,7 @@ function build(c: Config) {
           captcha({
             provider: "cloudflare-turnstile",
             secretKey: c.captcha.secretKey,
-            endpoints: ["/sign-in/magic-link"],
+            endpoints: ["/sign-in/magic-link", "/sign-in/email", "/sign-up/email"],
           }),
         ]
       : []),
@@ -54,9 +54,27 @@ function build(c: Config) {
     secret: e.BETTER_AUTH_SECRET,
     trustedOrigins: appOrigins(),
     database: drizzleAdapter(db(), { provider: "pg", schema: { ...schema, rateLimit: schema.rateLimit } }),
+    // Works with no email service at all. Accounts are not email-verified, so they can never be admins;
+    // the owner's admin account is created by the server at start (src/lib/bootstrap.ts).
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 8,
+      maxPasswordLength: 128,
+      autoSignIn: true,
+      requireEmailVerification: false,
+    },
     socialProviders: c.google ? { google: { clientId: c.google.clientId, clientSecret: c.google.clientSecret, prompt: "select_account" } } : {},
     session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
-    rateLimit: { enabled: true, storage: "database", window: 60, max: 60 },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 60,
+      customRules: {
+        "/sign-in/email": { window: 300, max: 10 },
+        "/sign-up/email": { window: 3600, max: 5 },
+      },
+    },
     advanced: {
       ipAddress: { ipAddressHeaders: [e.IP_HEADER] },
       useSecureCookies: e.APP_URL.startsWith("https://"),

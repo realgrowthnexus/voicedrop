@@ -5,7 +5,7 @@ import { paddleEvents, subscriptions, transactions, user } from "@/db/schema";
 import { track } from "@/lib/events";
 import { PACK_CHARS } from "@/lib/plans";
 import { grantPack, revokePack } from "@/lib/quota/ledger";
-import { isPackPrice, planForPrice, prices } from "./paddle";
+import { isPackPrice, planForPrice, prices, type Prices } from "./paddle";
 
 /* Minimal shapes of the Paddle Billing v2 payloads we use (snake_case, as sent). */
 type CustomData = { userId?: unknown } | null | undefined;
@@ -54,7 +54,7 @@ async function linkCustomer(tx: Tx, userId: string, customerId?: string | null) 
   if (customerId) await tx.update(user).set({ paddleCustomerId: customerId }).where(eq(user.id, userId));
 }
 
-async function applySubscription(tx: Tx, evt: PaddleEvent): Promise<ApplyResult> {
+async function applySubscription(tx: Tx, evt: PaddleEvent, pr: Prices): Promise<ApplyResult> {
   const d = evt.data as SubscriptionData;
   const occurred = new Date(evt.occurred_at);
   const [existing] = await tx.select().from(subscriptions).where(eq(subscriptions.paddleSubscriptionId, d.id));
@@ -62,7 +62,6 @@ async function applySubscription(tx: Tx, evt: PaddleEvent): Promise<ApplyResult>
 
   const userId = existing?.userId ?? (await resolveUserId(tx, d.custom_data, d.customer_id, d.id));
   if (!userId) return "unmatched";
-  const pr = await prices();
   const plan = d.items.map((i) => planForPrice(i.price?.id, pr)).find(Boolean) ?? (existing?.plan as "creator" | "pro" | undefined);
   if (!plan) return "ignored";
 
@@ -80,15 +79,14 @@ async function applySubscription(tx: Tx, evt: PaddleEvent): Promise<ApplyResult>
   };
   await tx.insert(subscriptions).values(values).onConflictDoUpdate({ target: subscriptions.paddleSubscriptionId, set: values });
   await linkCustomer(tx, userId, d.customer_id);
-  if (evt.event_type === "subscription.created") await track(userId, "subscription_started", { plan });
+  if (evt.event_type === "subscription.created") await track(userId, "subscription_started", { plan }, tx);
   return "applied";
 }
 
-async function applyTransactionCompleted(tx: Tx, evt: PaddleEvent): Promise<ApplyResult> {
+async function applyTransactionCompleted(tx: Tx, evt: PaddleEvent, pr: Prices): Promise<ApplyResult> {
   const d = evt.data as TransactionData;
   const userId = await resolveUserId(tx, d.custom_data, d.customer_id, d.subscription_id);
   if (!userId) return "unmatched";
-  const pr = await prices();
   const packQty = d.items.filter((i) => isPackPrice(i.price_id ?? i.price?.id, pr)).reduce((n, i) => n + (i.quantity || 0), 0);
   const total = Number.parseInt(d.details?.totals?.grand_total ?? d.details?.totals?.total ?? "0", 10) || 0;
   await tx
@@ -105,7 +103,7 @@ async function applyTransactionCompleted(tx: Tx, evt: PaddleEvent): Promise<Appl
     .onConflictDoNothing();
   if (packQty > 0) await grantPack(tx, userId, d.id, PACK_CHARS * packQty);
   await linkCustomer(tx, userId, d.customer_id);
-  await track(userId, "purchase", { kind: d.subscription_id ? "subscription" : "pack", amountCents: total, currency: d.currency_code });
+  await track(userId, "purchase", { kind: d.subscription_id ? "subscription" : "pack", amountCents: total, currency: d.currency_code }, tx);
   return "applied";
 }
 
@@ -121,6 +119,9 @@ async function applyAdjustment(tx: Tx, evt: PaddleEvent): Promise<ApplyResult> {
 
 /** Apply one verified Paddle event exactly once. */
 export async function applyPaddleEvent(evt: PaddleEvent): Promise<ApplyResult> {
+  // Read settings BEFORE the transaction: the embedded database runs one transaction at a time,
+  // so any query outside `tx` while it is open would wait forever.
+  const pr = await prices();
   return db().transaction(async (tx) => {
     const inserted = await tx
       .insert(paddleEvents)
@@ -129,8 +130,8 @@ export async function applyPaddleEvent(evt: PaddleEvent): Promise<ApplyResult> {
       .returning({ id: paddleEvents.eventId });
     if (!inserted.length) return "duplicate";
 
-    if (evt.event_type.startsWith("subscription.")) return applySubscription(tx, evt);
-    if (evt.event_type === "transaction.completed") return applyTransactionCompleted(tx, evt);
+    if (evt.event_type.startsWith("subscription.")) return applySubscription(tx, evt, pr);
+    if (evt.event_type === "transaction.completed") return applyTransactionCompleted(tx, evt, pr);
     if (evt.event_type === "adjustment.created" || evt.event_type === "adjustment.updated") return applyAdjustment(tx, evt);
     return "ignored";
   });

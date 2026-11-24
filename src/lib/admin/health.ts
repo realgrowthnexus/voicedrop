@@ -24,9 +24,17 @@ async function timed<T>(fn: () => Promise<T>, ms = 8000): Promise<T> {
 async function checkDb(): Promise<Check> {
   try {
     await timed(() => db().execute(sql`select 1`));
-    return { id: "db", name: "Database", state: "ok", detail: "Connected." };
+    const e = env();
+    return {
+      id: "db",
+      name: "Database",
+      state: "ok",
+      detail: e.DATABASE_URL
+        ? "Connected."
+        : `Connected. Built-in database on this server (${e.EMBEDDED_DB_DIR}); a backup is saved daily in ${e.DATA_DIR}/backups (last 7 kept).`,
+    };
   } catch (e) {
-    return { id: "db", name: "Database", state: "error", detail: (e as Error).message, fix: "Check DATABASE_URL in Hostinger → Environment variables." };
+    return { id: "db", name: "Database", state: "error", detail: (e as Error).message, fix: "Restart the app in Hostinger. If it persists, send this message to support." };
   }
 }
 
@@ -95,9 +103,8 @@ export async function systemChecks(): Promise<Check[]> {
       ? {
           id: "email",
           name: "Sign-in email",
-          state: c.google ? "warn" : "error",
-          detail: "Not set up: email sign-in links can't be sent.",
-          fix: "Create a mailbox in Hostinger → Emails (e.g. login@voicedrop.rest) and enter it under Email below.",
+          state: "off",
+          detail: "Off (optional). People sign up with email + password. Add a mailbox below to also send sign-in links.",
         }
       : { id: "email", name: "Sign-in email", state: "ok", detail: c.email.mode === "smtp" ? `SMTP ${c.email.smtp!.host} as ${c.email.smtp!.user}.` : c.email.mode === "resend" ? "Resend." : "Test mode (logged, not sent)." },
   );
