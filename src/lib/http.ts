@@ -32,6 +32,15 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
 }
 
 /** Defence in depth against CSRF for cookie-authenticated POSTs (on top of SameSite=Lax cookies). */
+/** The site's origin plus its www / bare twin (visitors may arrive on either). */
+export function appOrigins(): string[] {
+  const u = new URL(env().APP_URL);
+  const twin = new URL(u.origin);
+  if (/^(localhost|\d+\.\d+\.\d+\.\d+)$/.test(u.hostname)) return [u.origin];
+  twin.hostname = u.hostname.startsWith("www.") ? u.hostname.slice(4) : `www.${u.hostname}`;
+  return [u.origin, twin.origin];
+}
+
 export function assertSameOrigin(req: Request): void {
   const origin = req.headers.get("origin");
   if (!origin) {
@@ -39,5 +48,5 @@ export function assertSameOrigin(req: Request): void {
     if (site && site !== "same-origin" && site !== "none") throw new HttpError(403, "bad_origin", "Cross-site request blocked.");
     return;
   }
-  if (origin !== new URL(env().APP_URL).origin) throw new HttpError(403, "bad_origin", "Cross-site request blocked.");
+  if (!appOrigins().includes(origin)) throw new HttpError(403, "bad_origin", "Cross-site request blocked.");
 }

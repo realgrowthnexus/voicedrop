@@ -14,6 +14,7 @@ import { clientIp, hashIp } from "@/lib/abuse/ip";
 import { sendEmail, magicLinkEmail } from "@/lib/email";
 import { cfg, type Config } from "@/lib/config";
 import { env } from "@/lib/env";
+import { appOrigins } from "@/lib/http";
 import { track } from "@/lib/events";
 
 export const MAX_ACCOUNTS_PER_IP = 3;
@@ -51,7 +52,7 @@ function build(c: Config) {
     appName: BRAND,
     baseURL: e.APP_URL,
     secret: e.BETTER_AUTH_SECRET,
-    trustedOrigins: [e.APP_URL],
+    trustedOrigins: appOrigins(),
     database: drizzleAdapter(db(), { provider: "pg", schema: { ...schema, rateLimit: schema.rateLimit } }),
     socialProviders: c.google ? { google: { clientId: c.google.clientId, clientSecret: c.google.clientSecret, prompt: "select_account" } } : {},
     session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
