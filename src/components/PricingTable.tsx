@@ -77,9 +77,6 @@ export function PricingTable() {
                 p.featured ? "border-lamp/60 bg-surface-2" : "border-line bg-surface hover:border-line-strong"
               }`}
             >
-              {p.featured ? (
-                <span aria-hidden className="pointer-events-none absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-lamp to-transparent" />
-              ) : null}
               <div className="flex items-center justify-between">
                 <h3 id={`plan-${p.id}`} className="text-lg font-semibold tracking-[-0.01em]">
                   {p.name}

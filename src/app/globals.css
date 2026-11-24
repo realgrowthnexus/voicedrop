@@ -1,31 +1,8 @@
 @import "tailwindcss";
 
-/* VoiceoverDrop v2 — "Studio after dark". See docs/design/brand.md.
-   Dark is the default; light is opt-in via data-theme="light". */
+/* VoiceoverDrop v2. See docs/design/brand.md.
+   Light is the default; dark is opt-in via data-theme="dark". No decorative gradients. */
 :root {
-  --bg: #0b1714;
-  --bg-2: #0e1c18;
-  --surface: #11211d;
-  --surface-2: #172a25;
-  --ink: #ede9df;
-  --mute: #9aa79f;
-  --line: rgb(237 233 223 / 0.1);
-  --line-strong: rgb(237 233 223 / 0.22);
-  --lamp: #ffb547;
-  --lamp-soft: rgb(255 181 71 / 0.16);
-  --lamp-ink: #1a1205;
-  --ok: #7fd6b0;
-  --danger: #ff8a7a;
-  --focus: #ffd08a;
-  --stage: #08120f;
-  --stage-ink: #ede9df;
-  --stage-mute: #8f9c95;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-io: cubic-bezier(0.76, 0, 0.24, 1);
-  color-scheme: dark;
-}
-
-:root[data-theme="light"] {
   --bg: #eef1ec;
   --bg-2: #e6eae4;
   --surface: #ffffff;
@@ -34,11 +11,34 @@
   --mute: #4f5d57;
   --line: rgb(14 29 25 / 0.09);
   --line-strong: rgb(14 29 25 / 0.2);
+  --lamp: #ffb547;
   --lamp-soft: rgb(255 181 71 / 0.28);
+  --lamp-ink: #1a1205;
   --ok: #1f7a55;
   --danger: #b3261e;
   --focus: #9a5b00;
+  --stage: #08120f;
+  --stage-ink: #ede9df;
+  --stage-mute: #8f9c95;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-io: cubic-bezier(0.76, 0, 0.24, 1);
   color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1714;
+  --bg-2: #0e1c18;
+  --surface: #11211d;
+  --surface-2: #172a25;
+  --ink: #ede9df;
+  --mute: #9aa79f;
+  --line: rgb(237 233 223 / 0.1);
+  --line-strong: rgb(237 233 223 / 0.22);
+  --lamp-soft: rgb(255 181 71 / 0.16);
+  --ok: #7fd6b0;
+  --danger: #ff8a7a;
+  --focus: #ffd08a;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -120,12 +120,12 @@ body {
   position: fixed;
   inset: -50%;
   z-index: 60;
-  opacity: 0.05;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   animation: grain 8s steps(10) infinite;
 }
-:root[data-theme="light"] .grain {
-  opacity: 0.035;
+:root[data-theme="dark"] .grain {
+  opacity: 0.05;
 }
 @keyframes grain {
   0%, 100% { transform: translate(0, 0); }
@@ -167,21 +167,8 @@ body {
     box-shadow 0.42s var(--ease-out);
   will-change: transform;
 }
-.btn::after {
-  /* soft sheen that sweeps across on hover */
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.9s var(--ease-out);
-}
 .btn:hover {
   transform: translateY(-1px);
-}
-.btn:hover::after {
-  transform: translateX(120%);
 }
 .btn:active {
   transform: translateY(0) scale(0.97);
@@ -193,16 +180,14 @@ body {
   cursor: not-allowed;
   transform: none;
 }
-.btn:disabled::after {
-  display: none;
-}
 .btn-primary {
   --btn-bg: var(--lamp);
   --btn-fg: var(--lamp-ink);
   --btn-bd: transparent;
 }
 .btn-primary:hover {
-  box-shadow: 0 10px 30px -10px rgb(255 181 71 / 0.6), 0 0 0 4px var(--lamp-soft);
+  background: #ffc46b;
+  box-shadow: 0 0 0 4px var(--lamp-soft);
 }
 .btn-secondary:hover {
   --btn-bd: var(--ink);
@@ -373,11 +358,11 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgb(237 233 223 / 0.07), transparent);
+  background: linear-gradient(90deg, transparent, rgb(14 29 25 / 0.06), transparent);
   animation: shimmer 1.6s linear infinite;
 }
-:root[data-theme="light"] .skeleton::after {
-  background: linear-gradient(90deg, transparent, rgb(14 29 25 / 0.06), transparent);
+:root[data-theme="dark"] .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgb(237 233 223 / 0.07), transparent);
 }
 @keyframes shimmer {
   to { transform: translateX(100%); }

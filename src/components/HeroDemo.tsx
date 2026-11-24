@@ -70,9 +70,7 @@ export function HeroDemo({ fallbackText }: { fallbackText: string }) {
   const progress = duration ? Math.min(1, time / duration) : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-stage text-stage-ink shadow-[0_40px_120px_-40px_rgba(255,181,71,0.25)]">
-      {/* lamp glow */}
-      <div aria-hidden className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[70%] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,181,71,0.22),transparent)] blur-2xl" />
+    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-stage text-stage-ink">
 
       <div className="relative h-28 px-4 sm:h-36 sm:px-8">
         <VoiceLine analyser={playing ? analyser : null} />

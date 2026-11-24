@@ -27,7 +27,6 @@ export default function Home() {
     <>
       {/* Hero: the stage */}
       <section className="relative overflow-hidden bg-stage pb-20 pt-32 text-stage-ink sm:pt-40">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] bg-[radial-gradient(60%_60%_at_50%_0%,rgba(255,181,71,0.13),transparent_70%)]" />
         <div className="relative mx-auto max-w-[1240px] px-5 sm:px-8">
           <h1 className="display text-[clamp(3.1rem,10.5vw,8.6rem)]">
             <span className="line-mask"><span style={{ ["--d" as string]: "60ms" }}>Give your script</span></span>
@@ -155,7 +154,6 @@ export default function Home() {
       <section className="mx-auto max-w-[1240px] px-5 sm:px-8">
         <Reveal>
           <div className="relative overflow-hidden rounded-[28px] bg-stage px-7 py-16 text-stage-ink sm:px-14 sm:py-20">
-            <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 size-96 rounded-full bg-[radial-gradient(closest-side,rgba(255,181,71,0.25),transparent)] blur-2xl" />
             <h2 className="display relative max-w-[14ch] text-[clamp(2.4rem,6.5vw,5.2rem)]">Your next video is one paste away.</h2>
             <div className="relative mt-10 flex flex-wrap items-center gap-4">
               <Link href="/login" className="btn btn-primary btn-lg">

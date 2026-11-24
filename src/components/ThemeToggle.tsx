@@ -6,9 +6,9 @@ const EVENT = "vod-theme";
 
 function read(): Mode {
   try {
-    return localStorage.getItem("theme") === "light" ? "light" : "dark";
+    return localStorage.getItem("theme") === "dark" ? "dark" : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 }
 
@@ -21,15 +21,16 @@ function subscribe(cb: () => void) {
   };
 }
 
+/** Light is the default; dark is an opt-in remembered per browser. */
 export function ThemeToggle() {
-  const mode = useSyncExternalStore(subscribe, read, () => "dark" as Mode);
+  const mode = useSyncExternalStore(subscribe, read, () => "light" as Mode);
   function toggle() {
     const next: Mode = mode === "dark" ? "light" : "dark";
     const apply = () => {
       try {
-        if (next === "light") {
-          localStorage.setItem("theme", "light");
-          document.documentElement.dataset.theme = "light";
+        if (next === "dark") {
+          localStorage.setItem("theme", "dark");
+          document.documentElement.dataset.theme = "dark";
         } else {
           localStorage.removeItem("theme");
           delete document.documentElement.dataset.theme;

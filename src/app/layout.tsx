@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b1714",
+  themeColor: "#eef1ec",
 };
 
-// Dark is the brand default; a saved "light" choice is applied before paint (no flash).
-const themeScript = `try{var t=localStorage.getItem("theme");if(t==="light")document.documentElement.dataset.theme="light"}catch(e){}`;
+// Light is the default; a saved "dark" choice is applied before paint (no flash).
+const themeScript = `try{var t=localStorage.getItem("theme");if(t==="dark")document.documentElement.dataset.theme="dark"}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const umamiSrc = process.env.NEXT_PUBLIC_UMAMI_SRC;

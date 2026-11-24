@@ -20,7 +20,7 @@ Everything else stays quiet so that one moment carries the brand.
 ## Colour (tokens)
 | Token | Dark (default) | Light | Use |
 |---|---|---|---|
-| `--bg` | `#0B1714` spruce night | `#EEF1EC` sage mist | page |
+| `--bg` | `#0B1714` spruce night | `#EEF1EC` sage mist (default) | page |
 | `--surface` | `#11211D` felt | `#FFFFFF` | panels |
 | `--ink` | `#EDE9DF` warm paper white | `#0E1D19` spruce | text |
 | `--mute` | `#9AA79F` | `#4F5D57` | secondary text (AA on bg) |
@@ -55,3 +55,8 @@ Depth from light, not shadows: hairline borders + a soft lamp glow behind the st
 - Not cream/terracotta, not near-black/acid-green: spruce + tungsten is specific to a studio at night.
 - The bold move is spent once (the living voice line); cards, lists and pricing stay hairline-quiet.
 - Changed from first idea: dropped an all-site gradient (SaaS tell) and a custom cursor (gimmick).
+
+## Update 2026-11-24 (owner feedback)
+- Owner: "light version looks fine, get rid of the gradient one". Light is now the default theme (dark is opt-in via the toggle),
+  and every decorative gradient/glow was removed (hero/stage/CTA/login radial glows, gradient hairlines, button sheen, glow shadows).
+  Only functional gradients remain (link underline animation, loading shimmer).

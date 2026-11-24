@@ -101,7 +101,6 @@ export function JobResult({ job, compact = false }: { job: PublicJob; compact?: 
   if (compact) return <div className="mt-3">{body}</div>;
   return (
     <div className="fade-in relative overflow-hidden rounded-[22px] border border-lamp/50 bg-surface p-6">
-      <span aria-hidden className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-lamp to-transparent" />
       <p className="mb-5 flex items-center gap-2 font-semibold">
         <span aria-hidden className="grid size-6 place-items-center rounded-full bg-lamp text-lamp-ink">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>

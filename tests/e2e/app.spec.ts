@@ -77,7 +77,7 @@ test("banned user loses access immediately", async ({ page }) => {
 for (const scheme of ["light", "dark"] as const) {
   test(`no serious accessibility violations (${scheme})`, async ({ browser }) => {
     const ctx = await browser.newContext({ colorScheme: scheme });
-    if (scheme === "light") await ctx.addInitScript(() => localStorage.setItem("theme", "light"));
+    if (scheme === "dark") await ctx.addInitScript(() => localStorage.setItem("theme", "dark"));
     const page = await ctx.newPage();
     for (const path of ["/", "/pricing", "/voices", "/login", "/terms"]) {
       await page.goto(path);

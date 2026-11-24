@@ -8,7 +8,6 @@ const STAGE_VARS = { "--ink": "var(--stage-ink)", "--mute": "var(--stage-mute)" 
 export function LoginStage() {
   return (
     <aside style={STAGE_VARS} className="relative hidden overflow-hidden bg-stage text-stage-ink lg:flex lg:flex-col">
-      <div aria-hidden className="pointer-events-none absolute -left-24 top-1/3 size-[36rem] rounded-full bg-[radial-gradient(closest-side,rgba(255,181,71,0.16),transparent)] blur-2xl" />
       <div className="relative px-10 py-6">
         <Logo />
       </div>
