@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { subscriptions } from "@/db/schema";
-import { paddleApi, priceIdFor } from "@/lib/billing/paddle";
+import { paddleApi, priceIdFor, prices } from "@/lib/billing/paddle";
 import { assertSameOrigin, handle, HttpError } from "@/lib/http";
 import { rateLimit } from "@/lib/ratelimit";
 import { requireUser } from "@/lib/session";
@@ -26,7 +26,7 @@ export const POST = handle(async (req: NextRequest) => {
   if (!sub) throw new HttpError(404, "no_subscription", "You don't have an active subscription.");
   if (sub.plan === parsed.data.plan) return NextResponse.json({ ok: true, unchanged: true });
   await paddleApi("PATCH", `/subscriptions/${encodeURIComponent(sub.paddleSubscriptionId)}`, {
-    items: [{ price_id: priceIdFor(parsed.data.plan), quantity: 1 }],
+    items: [{ price_id: priceIdFor(parsed.data.plan, await prices()), quantity: 1 }],
     proration_billing_mode: "prorated_immediately",
   });
   return NextResponse.json({ ok: true });

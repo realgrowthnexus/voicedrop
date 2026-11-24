@@ -2,17 +2,30 @@ import type { Metadata, Viewport } from "next";
 import { Courier_Prime, Instrument_Sans } from "next/font/google";
 import Script from "next/script";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import { BRAND, TAGLINE } from "@/lib/brand";
+import { BRAND, SITE_URL, TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 const instrument = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument", display: "swap", axes: ["wdth"] });
 const courier = Courier_Prime({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-courier", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(process.env.APP_URL ?? SITE_URL),
   title: { default: `${BRAND} — natural voice-overs for YouTube and TikTok`, template: `%s · ${BRAND}` },
   description: `${TAGLINE} Natural English voices, MP3/WAV downloads and word-timed subtitles.`,
-  openGraph: { title: BRAND, description: TAGLINE, type: "website" },
+  applicationName: BRAND,
+  openGraph: {
+    title: `${BRAND}: natural voice-overs for YouTube and TikTok`,
+    description: `${TAGLINE} 12 natural English voices, MP3/WAV downloads and word-timed subtitles. Free every week.`,
+    type: "website",
+    siteName: BRAND,
+    url: "/",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${BRAND}: natural voice-overs for YouTube and TikTok`,
+    description: `${TAGLINE} Free every week.`,
+  },
   icons: { icon: "/icon.svg" },
 };
 

@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { applyPaddleEvent, type PaddleEvent } from "@/lib/billing/apply";
 import { verifyPaddleSignature } from "@/lib/billing/paddle";
-import { env } from "@/lib/env";
+import { cfg } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const raw = await req.text();
-  if (!verifyPaddleSignature(raw, req.headers.get("paddle-signature"), env().PADDLE_WEBHOOK_SECRET ?? "")) {
+  if (!verifyPaddleSignature(raw, req.headers.get("paddle-signature"), (await cfg()).paddle.webhookSecret ?? "")) {
     return NextResponse.json({ error: "invalid signature" }, { status: 401 });
   }
   let evt: PaddleEvent;

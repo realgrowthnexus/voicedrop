@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 const BASE = "http://localhost:3000";
 
 export async function requestMagicLink(email: string, ip = "203.0.113.7") {
-  return auth().handler(
+  return (await auth()).handler(
     new Request(`${BASE}/api/auth/sign-in/magic-link`, {
       method: "POST",
       headers: { "content-type": "application/json", origin: BASE, "x-forwarded-for": ip },
@@ -32,7 +32,7 @@ export async function signIn(email: string, ip = "203.0.113.7") {
   const r = await requestMagicLink(email, ip);
   if (r.status !== 200) return { status: r.status, cookie: null as string | null, res: r };
   const url = await lastLinkFor(email);
-  const res = await auth().handler(new Request(url, { headers: { "x-forwarded-for": ip } }));
+  const res = await (await auth()).handler(new Request(url, { headers: { "x-forwarded-for": ip } }));
   const setCookies = res.headers.getSetCookie();
   const cookie = setCookies.map((c) => c.split(";")[0]).join("; ") || null;
   return { status: res.status, cookie, res };

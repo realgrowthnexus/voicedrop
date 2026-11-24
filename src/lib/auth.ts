@@ -12,6 +12,7 @@ import * as schema from "@/db/schema";
 import { isDisposableEmail } from "@/lib/abuse/disposable";
 import { clientIp, hashIp } from "@/lib/abuse/ip";
 import { sendEmail, magicLinkEmail } from "@/lib/email";
+import { cfg, type Config } from "@/lib/config";
 import { env } from "@/lib/env";
 import { track } from "@/lib/events";
 
@@ -23,7 +24,7 @@ function headersOf(ctx: unknown): Headers | null {
   return c?.request?.headers ?? c?.headers ?? null;
 }
 
-function build() {
+function build(c: Config) {
   const e = env();
   const plugins = [
     magicLink({
@@ -34,15 +35,15 @@ function build() {
         await sendEmail(magicLinkEmail(email, url));
       },
     }),
-    ...(e.CAPTCHA_DISABLED
-      ? []
-      : [
+    ...(c.captcha
+      ? [
           captcha({
             provider: "cloudflare-turnstile",
-            secretKey: e.TURNSTILE_SECRET_KEY!,
+            secretKey: c.captcha.secretKey,
             endpoints: ["/sign-in/magic-link"],
           }),
-        ]),
+        ]
+      : []),
     nextCookies(), // must be last
   ];
 
@@ -52,10 +53,7 @@ function build() {
     secret: e.BETTER_AUTH_SECRET,
     trustedOrigins: [e.APP_URL],
     database: drizzleAdapter(db(), { provider: "pg", schema: { ...schema, rateLimit: schema.rateLimit } }),
-    socialProviders:
-      e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET
-        ? { google: { clientId: e.GOOGLE_CLIENT_ID, clientSecret: e.GOOGLE_CLIENT_SECRET, prompt: "select_account" } }
-        : {},
+    socialProviders: c.google ? { google: { clientId: c.google.clientId, clientSecret: c.google.clientSecret, prompt: "select_account" } } : {},
     session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
     rateLimit: { enabled: true, storage: "database", window: 60, max: 60 },
     advanced: {
@@ -113,9 +111,11 @@ function build() {
 }
 
 type Auth = ReturnType<typeof build>;
-const g = globalThis as unknown as { __vdAuth?: Auth };
+const g = globalThis as unknown as { __vdAuth?: { fp: string; auth: Auth } };
 
-export function auth(): Auth {
-  if (!g.__vdAuth) g.__vdAuth = build();
-  return g.__vdAuth;
+/** The auth instance for the current settings (rebuilt when Google/captcha/email settings change). */
+export async function auth(): Promise<Auth> {
+  const c = await cfg();
+  if (g.__vdAuth?.fp !== c.authFingerprint) g.__vdAuth = { fp: c.authFingerprint, auth: build(c) };
+  return g.__vdAuth.auth;
 }

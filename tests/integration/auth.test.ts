@@ -58,7 +58,7 @@ describe("auth", () => {
     for (const n of [1, 2, 3, 4]) {
       const email = `noip${n}@gmail.com`;
       await db().execute(rawSql`delete from rate_limit`); // isolate from Better Auth's own per-IP limiter
-      await auth().handler(
+      await (await auth()).handler(
         new Request("http://localhost:3000/api/auth/sign-in/magic-link", {
           method: "POST",
           headers: { "content-type": "application/json", origin: "http://localhost:3000", "x-forwarded-for": `203.0.113.${n}` },
@@ -69,7 +69,7 @@ describe("auth", () => {
       const { appEvents } = await import("@/db/schema");
       const { desc, eq } = await import("drizzle-orm");
       const [ev] = await d().select().from(appEvents).where(eq(appEvents.name, "dev_email")).orderBy(desc(appEvents.createdAt)).limit(1);
-      const res = await auth().handler(new Request((ev.props as { url: string }).url)); // no IP header at all
+      const res = await (await auth()).handler(new Request((ev.props as { url: string }).url)); // no IP header at all
       expect(res.headers.getSetCookie().join(";")).toContain("session_token");
     }
   });

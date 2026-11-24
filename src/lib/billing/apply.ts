@@ -5,7 +5,7 @@ import { paddleEvents, subscriptions, transactions, user } from "@/db/schema";
 import { track } from "@/lib/events";
 import { PACK_CHARS } from "@/lib/plans";
 import { grantPack, revokePack } from "@/lib/quota/ledger";
-import { isPackPrice, planForPrice } from "./paddle";
+import { isPackPrice, planForPrice, prices } from "./paddle";
 
 /* Minimal shapes of the Paddle Billing v2 payloads we use (snake_case, as sent). */
 type CustomData = { userId?: unknown } | null | undefined;
@@ -62,7 +62,8 @@ async function applySubscription(tx: Tx, evt: PaddleEvent): Promise<ApplyResult>
 
   const userId = existing?.userId ?? (await resolveUserId(tx, d.custom_data, d.customer_id, d.id));
   if (!userId) return "unmatched";
-  const plan = d.items.map((i) => planForPrice(i.price?.id)).find(Boolean) ?? (existing?.plan as "creator" | "pro" | undefined);
+  const pr = await prices();
+  const plan = d.items.map((i) => planForPrice(i.price?.id, pr)).find(Boolean) ?? (existing?.plan as "creator" | "pro" | undefined);
   if (!plan) return "ignored";
 
   const values = {
@@ -87,7 +88,8 @@ async function applyTransactionCompleted(tx: Tx, evt: PaddleEvent): Promise<Appl
   const d = evt.data as TransactionData;
   const userId = await resolveUserId(tx, d.custom_data, d.customer_id, d.subscription_id);
   if (!userId) return "unmatched";
-  const packQty = d.items.filter((i) => isPackPrice(i.price_id ?? i.price?.id)).reduce((n, i) => n + (i.quantity || 0), 0);
+  const pr = await prices();
+  const packQty = d.items.filter((i) => isPackPrice(i.price_id ?? i.price?.id, pr)).reduce((n, i) => n + (i.quantity || 0), 0);
   const total = Number.parseInt(d.details?.totals?.grand_total ?? d.details?.totals?.total ?? "0", 10) || 0;
   await tx
     .insert(transactions)

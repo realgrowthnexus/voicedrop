@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { LoginForm } from "@/components/LoginForm";
 import { LoginStage } from "@/components/LoginStage";
-import { env } from "@/lib/env";
+import { cfg } from "@/lib/config";
 import { getUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (await getUser()) redirect("/dashboard");
   const sp = await searchParams;
   const code = typeof sp.error === "string" ? sp.error : undefined;
-  const e = env();
+  const c = await cfg();
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       <LoginStage />
@@ -42,7 +42,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </p>
           ) : null}
           <div className="fade-in" style={{ ["--d" as string]: "350ms" }}>
-            <LoginForm googleEnabled={!!(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET)} turnstileSiteKey={e.CAPTCHA_DISABLED ? null : (e.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? null)} />
+            <LoginForm googleEnabled={!!c.google} emailEnabled={c.email.mode !== "none"} turnstileSiteKey={c.captcha?.siteKey ?? null} />
           </div>
           <p className="mt-10 text-sm text-mute">
             By continuing you agree to our{" "}

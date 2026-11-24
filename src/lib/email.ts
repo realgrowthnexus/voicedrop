@@ -1,23 +1,45 @@
 import "server-only";
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import { db } from "@/db";
 import { appEvents } from "@/db/schema";
 import { BRAND } from "@/lib/brand";
-import { env } from "@/lib/env";
+import { cfg } from "@/lib/config";
 
 export type Email = { to: string; subject: string; html: string; text: string; meta?: Record<string, string> };
 
+export class EmailNotConfiguredError extends Error {
+  constructor() {
+    super("Email sending is not set up yet (Admin → Settings → Email).");
+  }
+}
+
 export async function sendEmail(mail: Email): Promise<void> {
-  const e = env();
-  if (e.EMAIL_BACKEND === "log") {
+  const c = (await cfg()).email;
+  if (c.mode === "log") {
     // Dev/test only (blocked in production by env validation).
     await db().insert(appEvents).values({ name: "dev_email", props: { to: mail.to, subject: mail.subject, text: mail.text, ...mail.meta } });
     console.log(`[dev-email] to=${mail.to} subject=${mail.subject}\n${mail.text}`);
     return;
   }
-  const resend = new Resend(e.RESEND_API_KEY);
-  const { error } = await resend.emails.send({ from: e.EMAIL_FROM, to: mail.to, subject: mail.subject, html: mail.html, text: mail.text });
-  if (error) throw new Error(`email send failed: ${error.message}`);
+  if (c.mode === "smtp" && c.smtp) {
+    const t = nodemailer.createTransport({
+      host: c.smtp.host,
+      port: c.smtp.port,
+      secure: c.smtp.port === 465,
+      auth: { user: c.smtp.user, pass: c.smtp.password },
+      connectionTimeout: 15_000,
+      socketTimeout: 20_000,
+    });
+    await t.sendMail({ from: c.from, to: mail.to, subject: mail.subject, html: mail.html, text: mail.text });
+    return;
+  }
+  if (c.mode === "resend" && c.resendKey) {
+    const { error } = await new Resend(c.resendKey).emails.send({ from: c.from, to: mail.to, subject: mail.subject, html: mail.html, text: mail.text });
+    if (error) throw new Error(`email send failed: ${error.message}`);
+    return;
+  }
+  throw new EmailNotConfiguredError();
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

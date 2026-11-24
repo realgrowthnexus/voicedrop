@@ -2,19 +2,19 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { jobs } from "@/db/schema";
+import { cfg } from "@/lib/config";
 import { env } from "@/lib/env";
 import { runpodActualSpendUsd } from "./runpod-billing";
 
 /** New jobs stop once committed + in-flight spend would pass this share of the budget. */
 export const BUDGET_STOP_RATIO = 0.95;
-/** Conservative GPU seconds per 1,000 characters (Kokoro on a GPU is ~50x real time; 1k chars ≈ 1 min audio). */
-export const EST_GPU_SEC_PER_1K_CHARS = 3;
+/** Conservative worker seconds per 1,000 characters. Measured: ~1.3 s on an Ampere GPU, ~12 s when a host falls back to CPU (e.g. Blackwell). */
+export const EST_GPU_SEC_PER_1K_CHARS = 12;
 /** Conservative per-job overhead: possible cold start + model load + idle tail. */
 export const EST_GPU_OVERHEAD_SEC = 30;
 
-export function budgetActive(): boolean {
-  const e = env();
-  return e.TTS_BACKEND === "runpod" && e.GPU_BUDGET_USD > 0;
+export async function budgetActive(): Promise<boolean> {
+  return (await cfg()).tts.mode === "runpod" && env().GPU_BUDGET_USD > 0;
 }
 
 /** Upper-bound cost estimate (micro-USD) for a job that has not finished yet. */
@@ -49,7 +49,8 @@ export type BudgetState = {
 };
 
 export async function budgetState(): Promise<BudgetState> {
-  const billed = budgetActive() ? await runpodActualSpendUsd() : null;
+  const active = await budgetActive();
+  const billed = active ? await runpodActualSpendUsd() : null;
   const [row] = await db()
     .select({
       spent: sql<number>`coalesce(sum(${jobs.gpuCostMicros}), 0)::bigint`,
@@ -67,7 +68,7 @@ export async function budgetState(): Promise<BudgetState> {
     billedUsd: billed,
     inflightUsd: inflight / 1e6,
     stopAtUsd: e.GPU_BUDGET_USD * BUDGET_STOP_RATIO,
-    active: budgetActive(),
+    active,
   };
 }
 
@@ -76,7 +77,7 @@ export async function budgetState(): Promise<BudgetState> {
  * Pass `alreadyInFlight` when the job is itself counted as processing (at dispatch time).
  */
 export async function budgetAllows(chars: number, alreadyInFlight = false): Promise<boolean> {
-  if (!budgetActive()) return true;
+  if (!(await budgetActive())) return true;
   const s = await budgetState();
   const extra = alreadyInFlight ? 0 : estimateJobCostMicros(chars) / 1e6;
   return s.spentUsd + s.inflightUsd + extra <= s.stopAtUsd;

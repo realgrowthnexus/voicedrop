@@ -72,7 +72,7 @@ describe("jobs service", () => {
     const { input, webhook } = fake.submitted[0];
     expect(input).toMatchObject({ job_id: job.id, voice: "af_heart", formats: ["mp3"] });
     expect(Object.keys(input.uploads)).toEqual(["mp3"]);
-    expect(input.uploads.mp3).toContain(`/api/dev-storage/jobs/${u.id}/${job.id}.mp3`);
+    expect(input.uploads.mp3).toContain(`/api/files/jobs/${u.id}/${job.id}.mp3`);
     expect(webhook).toContain(`job=${job.id}`);
     expect((await getBalances(db(), u.id)).freeRemaining).toBe(3000 - job.chars);
   });

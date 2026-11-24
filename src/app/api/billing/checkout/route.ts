@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/db";
-import { paddleApi, priceIdFor } from "@/lib/billing/paddle";
+import { paddleApi, priceIdFor, prices } from "@/lib/billing/paddle";
 import { track } from "@/lib/events";
 import { assertSameOrigin, handle, HttpError } from "@/lib/http";
 import { getActivePlan } from "@/lib/quota/ledger";
@@ -27,7 +27,7 @@ export const POST = handle(async (req: NextRequest) => {
   }
 
   const txn = await paddleApi<{ id: string }>("POST", "/transactions", {
-    items: [{ price_id: priceIdFor(product), quantity: product === "pack" ? quantity : 1 }],
+    items: [{ price_id: priceIdFor(product, await prices()), quantity: product === "pack" ? quantity : 1 }],
     custom_data: { userId: u.id },
     ...(u.paddleCustomerId ? { customer_id: u.paddleCustomerId } : {}),
   });

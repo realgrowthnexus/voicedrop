@@ -238,6 +238,14 @@ export const adminActions = pgTable("admin_actions", {
   createdAt: ts("created_at").notNull().defaultNow(),
 });
 
+/** Service keys entered by the owner in Admin → Settings (environment variables take precedence). */
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
 export type User = typeof user.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;

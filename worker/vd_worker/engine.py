@@ -42,16 +42,26 @@ class WordTokens:
     tokens: list[int]
 
 
-def _providers() -> list[str]:
-    avail = ort.get_available_providers()
-    if "CUDAExecutionProvider" in avail:
-        # Load CUDA/cuDNN from pip-installed nvidia-* wheels (e.g. shipped with torch) if present.
-        try:
-            ort.preload_dlls()
-        except Exception as e:  # noqa: BLE001 - best effort; the session will report real failures
-            log.warning("onnxruntime preload_dlls failed: %s", e)
-        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
-    return ["CPUExecutionProvider"]
+CUDA = "CUDAExecutionProvider"
+CPU = "CPUExecutionProvider"
+
+
+def _make_session(model_path: str, opts: ort.SessionOptions, providers: list[str] | None) -> ort.InferenceSession:
+    """Prefer the GPU. The worker image already ships CUDA 12 + cuDNN 9 (via torch's nvidia-* wheels),
+    so try CUDA as-is first; only if that silently falls back to CPU, preload the pip CUDA libraries and retry."""
+    if providers:
+        return ort.InferenceSession(model_path, sess_options=opts, providers=providers)
+    if CUDA not in ort.get_available_providers():
+        return ort.InferenceSession(model_path, sess_options=opts, providers=[CPU])
+    sess = ort.InferenceSession(model_path, sess_options=opts, providers=[CUDA, CPU])
+    if CUDA in sess.get_providers():
+        return sess
+    log.warning("CUDA provider did not initialise; preloading CUDA/cuDNN libraries and retrying")
+    try:
+        ort.preload_dlls()
+    except Exception as e:  # noqa: BLE001
+        log.warning("onnxruntime preload_dlls failed: %s", e)
+    return ort.InferenceSession(model_path, sess_options=opts, providers=[CUDA, CPU])
 
 
 class Engine:
@@ -61,7 +71,8 @@ class Engine:
         threads = os.environ.get("VD_ORT_THREADS")
         if threads:
             opts.intra_op_num_threads = int(threads)
-        self.session = ort.InferenceSession(str(model_path), sess_options=opts, providers=providers or _providers())
+        self.session = _make_session(str(model_path), opts, providers)
+        log.info("onnxruntime providers: %s", self.session.get_providers())
         self.providers = self.session.get_providers()
         self.vocab = VOCAB
         self.space_id = self.vocab[" "]

@@ -5,14 +5,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-OUT="${1:-dist/voicedrop-web.zip}"
+OUT="${1:-dist/VOICEDROP-HOSTINGER-UPLOAD.zip}"
 mkdir -p "$(dirname "$OUT")"
 LIST="$(mktemp)"
 
 # Everything the web app needs at build/run time. Tests, the Python worker and dev tooling stay out
 # (Next type-checks every .ts file it can see, and dev-only types may not be installed there).
 git ls-files \
-  | grep -vE '^(tests/|worker/|docs/|\.github/|playwright\.config\.ts$|vitest\.config\.ts$|drizzle\.config\.ts$|AGENTS\.md$)' \
+  | grep -vE '^(tests/|worker/|docs/|assets/|scripts/brand-assets\.cjs$|\.github/|playwright\.config\.ts$|vitest\.config\.ts$|drizzle\.config\.ts$|AGENTS\.md$)' \
   > "$LIST"
 
 if grep -qE '(^|/)\.env' "$LIST"; then
@@ -20,6 +20,6 @@ if grep -qE '(^|/)\.env' "$LIST"; then
   exit 1
 fi
 
-[ -f "$OUT" ] && mv -f "$OUT" "$OUT.old"
+rm -f "$OUT"
 zip -q -X "$OUT" -@ < "$LIST"
 echo "wrote $OUT ($(wc -l < "$LIST") files, $(du -h "$OUT" | cut -f1))"

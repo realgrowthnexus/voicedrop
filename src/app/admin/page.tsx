@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { clientIp } from "@/lib/abuse/ip";
 import { env } from "@/lib/env";
+import { systemChecks } from "@/lib/admin/health";
 import { getStats } from "@/lib/admin/ops";
 import { budgetState } from "@/lib/jobs/budget";
 import { requireAdminPage } from "@/lib/session";
@@ -15,6 +16,7 @@ const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "â€
 export default async function AdminHome() {
   await requireAdminPage();
   const s = await getStats();
+  const todo = (await systemChecks()).filter((c) => c.state === "error");
   const seenIp = clientIp(await headers());
   const budget = await budgetState();
   const budgetNote = budget.active
@@ -33,6 +35,12 @@ export default async function AdminHome() {
   return (
     <div>
       <h1 className="title text-[clamp(2rem,4vw,2.8rem)]">Overview</h1>
+      {todo.length ? (
+        <p className="mt-4 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3">
+          Setup not finished: {todo.map((t) => t.name).join(", ")}.{" "}
+          <Link href="/admin/settings" className="font-semibold underline underline-offset-4">Open Settings</Link>
+        </p>
+      ) : null}
       {s.queue.held > 0 ? (
         <p className="mt-4 rounded-xl border border-ink bg-surface px-4 py-3">
           <span className="rounded bg-lamp px-1.5 text-lamp-ink font-semibold">{s.queue.held} flagged script{s.queue.held > 1 ? "s" : ""}</span> waiting for review.{" "}

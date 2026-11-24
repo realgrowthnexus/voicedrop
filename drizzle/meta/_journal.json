@@ -15,6 +15,13 @@
       "when": 1795476080466,
       "tag": "0001_gpu_cost",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795500870950,
+      "tag": "0002_app_settings",
+      "breakpoints": true
     }
   ]
 }

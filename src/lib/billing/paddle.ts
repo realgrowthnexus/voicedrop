@@ -1,6 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { env } from "@/lib/env";
+import { cfg, type Config } from "@/lib/config";
 
 /** Signature tolerance. Paddle's SDK uses 5s; we allow a little clock skew (replays are blocked by event-id idempotency). */
 export const SIGNATURE_TOLERANCE_SEC = 60;
@@ -23,14 +23,12 @@ export function verifyPaddleSignature(rawBody: string, header: string | null, se
   return h1s.some((h) => h.length === expected.length && /^[0-9a-f]+$/i.test(h) && timingSafeEqual(Buffer.from(h, "hex"), Buffer.from(expected, "hex")));
 }
 
-function baseUrl() {
-  return env().PADDLE_ENV === "production" ? "https://api.paddle.com" : "https://sandbox-api.paddle.com";
-}
-
 export async function paddleApi<T>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<T> {
-  const key = env().PADDLE_API_KEY;
+  const p = (await cfg()).paddle;
+  const key = p.apiKey;
   if (!key) throw new Error("PADDLE_API_KEY is not configured");
-  const res = await fetch(`${baseUrl()}${path}`, {
+  const base = p.env === "production" ? "https://api.paddle.com" : "https://sandbox-api.paddle.com";
+  const res = await fetch(`${base}${path}`, {
     method,
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -44,20 +42,24 @@ export async function paddleApi<T>(method: "GET" | "POST" | "PATCH", path: strin
 
 export type PaddleProduct = "creator" | "pro" | "pack";
 
-export function priceIdFor(p: PaddleProduct): string {
-  const e = env();
-  const id = p === "creator" ? e.PADDLE_PRICE_CREATOR : p === "pro" ? e.PADDLE_PRICE_PRO : e.PADDLE_PRICE_PACK;
+export type Prices = Config["paddle"]["prices"];
+
+export async function prices(): Promise<Prices> {
+  return (await cfg()).paddle.prices;
+}
+
+export function priceIdFor(p: PaddleProduct, pr: Prices): string {
+  const id = pr[p];
   if (!id) throw new Error(`Paddle price for ${p} is not configured`);
   return id;
 }
 
-export function planForPrice(priceId: string | null | undefined): "creator" | "pro" | null {
-  const e = env();
-  if (priceId && priceId === e.PADDLE_PRICE_CREATOR) return "creator";
-  if (priceId && priceId === e.PADDLE_PRICE_PRO) return "pro";
+export function planForPrice(priceId: string | null | undefined, pr: Prices): "creator" | "pro" | null {
+  if (priceId && priceId === pr.creator) return "creator";
+  if (priceId && priceId === pr.pro) return "pro";
   return null;
 }
 
-export function isPackPrice(priceId: string | null | undefined): boolean {
-  return !!priceId && priceId === env().PADDLE_PRICE_PACK;
+export function isPackPrice(priceId: string | null | undefined, pr: Prices): boolean {
+  return !!priceId && priceId === pr.pack;
 }

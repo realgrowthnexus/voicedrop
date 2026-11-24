@@ -1,4 +1,5 @@
 import "server-only";
+import { cfg } from "@/lib/config";
 import { env } from "@/lib/env";
 import { hmac, safeEqualHex } from "@/lib/sign";
 import type { Format } from "@/lib/plans";
@@ -86,11 +87,18 @@ export function setTtsBackendForTests(b: TtsBackend | null) {
   override = b;
 }
 
-export function ttsBackend(): TtsBackend {
+export class TtsNotConfiguredError extends Error {
+  constructor() {
+    super("Voice generation is not set up yet (Admin → Settings → Voice engine).");
+  }
+}
+
+export async function ttsBackend(): Promise<TtsBackend> {
   if (override) return override;
-  const e = env();
-  if (e.TTS_BACKEND === "local") return httpBackend(e.LOCAL_WORKER_URL.replace(/\/$/, ""), process.env.LOCAL_WORKER_TOKEN);
-  return httpBackend(`https://api.runpod.ai/v2/${e.RUNPOD_ENDPOINT_ID}`, e.RUNPOD_API_KEY, {
+  const t = (await cfg()).tts;
+  if (t.mode === "local") return httpBackend(t.url, process.env.LOCAL_WORKER_TOKEN);
+  if (t.mode === "none") throw new TtsNotConfiguredError();
+  return httpBackend(`https://api.runpod.ai/v2/${t.endpointId}`, t.apiKey, {
     policy: { executionTimeout: 10 * 60 * 1000, ttl: 60 * 60 * 1000 },
   });
 }

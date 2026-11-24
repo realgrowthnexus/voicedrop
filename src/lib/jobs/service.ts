@@ -14,6 +14,7 @@ import { refundJob, reserveAndCreateJob } from "@/lib/quota/ledger";
 import { SUBMIT_ERROR_MESSAGES, type SubmitErrorCode } from "@/lib/quota/rules";
 import { rateLimit } from "@/lib/ratelimit";
 import { CONTENT_TYPES, jobFileKey, storage } from "@/lib/storage";
+import { cfg } from "@/lib/config";
 import { ttsBackend, webhookUrl, type StatusResult } from "@/lib/tts";
 import type { JobStatus, PublicJob } from "@/lib/client-types";
 import { actualJobCost, budgetActive, budgetAllows, recordJobCost } from "./budget";
@@ -76,6 +77,9 @@ export async function createJob(u: User, body: unknown, headers: Headers): Promi
 
   const trimmed = text.trim();
   const chars = countChars(trimmed);
+  if ((await cfg()).tts.mode === "none") {
+    throw new HttpError(503, "not_ready", "Voice generation is being set up. Please try again a little later.");
+  }
   if (!(await budgetAllows(chars))) {
     throw new HttpError(503, "busy", "Voice generation is paused for now. Please try again later.");
   }
@@ -123,7 +127,7 @@ async function dispatch(job: Job): Promise<void> {
     const formats = job.formats as Format[];
     const uploads: Partial<Record<Format, string>> = {};
     for (const f of formats) uploads[f] = await st.putUrl(jobFileKey(job.userId, job.id, f), CONTENT_TYPES[f]);
-    const { id } = await ttsBackend().submit(
+    const { id } = await (await ttsBackend()).submit(
       { job_id: job.id, text: job.text, voice: job.voice, speed: job.speed, formats, uploads },
       webhookUrl(job.id),
     );
@@ -139,7 +143,35 @@ async function dispatch(job: Job): Promise<void> {
  * fewer than FREE_MAX_INFLIGHT jobs are processing. Safe to call concurrently:
  * each job is claimed with a conditional update.
  */
+const PURGE_EVERY_MS = 60 * 60 * 1000;
+const gPurge = globalThis as unknown as { __vdPurgeAt?: number };
+
+/** Delete stored files of jobs that expired in the last 3 days. Runs at most hourly. */
+export async function purgeExpiredFiles(now = new Date(), force = false): Promise<number> {
+  if (!force && gPurge.__vdPurgeAt && now.getTime() - gPurge.__vdPurgeAt < PURGE_EVERY_MS) return 0;
+  gPurge.__vdPurgeAt = now.getTime();
+  const rows = await db()
+    .select({ id: jobs.id, userId: jobs.userId, formats: jobs.formats })
+    .from(jobs)
+    .where(and(eq(jobs.status, "completed"), lt(jobs.expiresAt, now), sql`${jobs.expiresAt} > ${new Date(now.getTime() - 3 * 86_400_000).toISOString()}::timestamptz`))
+    .limit(500);
+  const st = storage();
+  let n = 0;
+  for (const r of rows) {
+    for (const f of r.formats as Format[]) {
+      try {
+        await st.remove(jobFileKey(r.userId, r.id, f));
+        n++;
+      } catch (e) {
+        console.error("[jobs] purge failed", r.id, f, e);
+      }
+    }
+  }
+  return n;
+}
+
 export async function pumpQueue(): Promise<number> {
+  void purgeExpiredFiles().catch((e) => console.error("[jobs] purge", e));
   const queued = await db()
     .select()
     .from(jobs)
@@ -167,7 +199,7 @@ export async function pumpQueue(): Promise<number> {
 /** Apply a terminal backend result. Idempotent: only a processing job changes. */
 export async function finalizeJob(jobId: string, result: StatusResult): Promise<void> {
   const terminal = ["COMPLETED", "FAILED", "CANCELLED", "TIMED_OUT"].includes(result.status);
-  if (terminal && budgetActive()) {
+  if (terminal && (await budgetActive())) {
     // Count GPU time once, whatever the outcome (failed runs are billed too).
     const [j] = await db().select({ chars: jobs.chars, cost: jobs.gpuCostMicros, status: jobs.status }).from(jobs).where(eq(jobs.id, jobId));
     if (j && j.cost == null && j.status === "processing") {
@@ -215,14 +247,14 @@ export async function reconcileJob(job: Job, now = new Date()): Promise<Job> {
     const age = now.getTime() - job.dispatchedAt.getTime();
     if (age > RECONCILE_AFTER_MS && job.runpodId) {
       try {
-        const st = await ttsBackend().status(job.runpodId);
+        const st = await (await ttsBackend()).status(job.runpodId);
         await finalizeJob(job.id, st);
       } catch (e) {
         console.error("[jobs] status check failed", job.id, e);
       }
     }
     if (age > STALE_AFTER_MS) {
-      if (budgetActive() && job.gpuCostMicros == null) {
+      if ((await budgetActive()) && job.gpuCostMicros == null) {
         const c = actualJobCost(STALE_AFTER_MS, 0, job.chars);
         await recordJobCost(job.id, c.gpuMs, c.micros);
       }

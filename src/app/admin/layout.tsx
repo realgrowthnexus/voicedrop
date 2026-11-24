@@ -16,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             ["/admin/users", "Users"],
             ["/admin/jobs", "Jobs"],
             ["/admin/flags", "Flagged scripts"],
+            ["/admin/settings", "Settings"],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="btn btn-secondary btn-sm">
               {label}

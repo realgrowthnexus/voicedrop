@@ -1,5 +1,9 @@
 import "server-only";
+import { createHmac } from "node:crypto";
+import { homedir } from "node:os";
+import path from "node:path";
 import { z } from "zod";
+import { SITE_URL } from "@/lib/brand";
 
 const bool = z
   .enum(["0", "1", "true", "false", ""])
@@ -8,13 +12,17 @@ const bool = z
 
 const optStr = z.string().trim().optional().transform((v) => (v ? v : undefined));
 
+/** Infrastructure only. Service keys (RunPod, Google, email, Paddle, Turnstile) live in `@/lib/config`,
+ *  read from the environment first and then from the admin Settings page (app_settings table). */
 const schema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    APP_URL: z.url(),
-    DATABASE_URL: z.string().min(1),
-    BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 chars"),
-    IP_HASH_SECRET: z.string().min(16),
+    APP_URL: z.url().default(SITE_URL),
+    DATABASE_URL: z.string().min(1, "DATABASE_URL is not set"),
+    /** Optional: derived from DATABASE_URL when unset (anyone holding the DB URL already controls everything). */
+    BETTER_AUTH_SECRET: optStr.pipe(z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 chars").optional()),
+    IP_HASH_SECRET: optStr.pipe(z.string().min(16).optional()),
+    RUNPOD_WEBHOOK_SECRET: optStr.pipe(z.string().min(16).optional()),
     /** Header carrying the real client IP. Hostinger: x-forwarded-for; behind Cloudflare proxy: cf-connecting-ip. */
     IP_HEADER: z.string().default("x-forwarded-for").transform((s) => s.toLowerCase()),
     ADMIN_EMAILS: z
@@ -22,37 +30,19 @@ const schema = z
       .default("")
       .transform((s) => s.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
 
-    GOOGLE_CLIENT_ID: optStr,
-    GOOGLE_CLIENT_SECRET: optStr,
-
-    EMAIL_BACKEND: z.enum(["resend", "log"]).default("resend"),
-    RESEND_API_KEY: optStr,
-    EMAIL_FROM: z.string().default("VoiceDrop <login@voicedrop.rest>"),
-
+    /** Dev/test switches. */
+    EMAIL_BACKEND: z.enum(["auto", "log"]).default("auto"),
     CAPTCHA_DISABLED: bool,
-    TURNSTILE_SECRET_KEY: optStr,
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY: optStr,
-
-    TTS_BACKEND: z.enum(["runpod", "local"]).default("runpod"),
-    RUNPOD_API_KEY: optStr,
-    RUNPOD_ENDPOINT_ID: optStr,
+    TTS_BACKEND: z.enum(["auto", "runpod", "local"]).default("auto"),
     LOCAL_WORKER_URL: z.string().default("http://127.0.0.1:8188"),
-    RUNPOD_WEBHOOK_SECRET: z.string().min(16),
 
-    STORAGE_BACKEND: z.enum(["r2", "local"]).default("r2"),
+    /** disk = files on this server behind signed URLs (default, works on Hostinger); r2 = Cloudflare R2. */
+    STORAGE_BACKEND: z.enum(["disk", "local", "r2"]).default("disk").transform((v) => (v === "local" ? "disk" : v)),
+    LOCAL_STORAGE_DIR: optStr,
     R2_ACCOUNT_ID: optStr,
     R2_ACCESS_KEY_ID: optStr,
     R2_SECRET_ACCESS_KEY: optStr,
     R2_BUCKET: optStr,
-    LOCAL_STORAGE_DIR: z.string().default(".data/storage"),
-
-    PADDLE_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
-    PADDLE_API_KEY: optStr,
-    PADDLE_WEBHOOK_SECRET: optStr,
-    NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: optStr,
-    PADDLE_PRICE_CREATOR: optStr,
-    PADDLE_PRICE_PRO: optStr,
-    PADDLE_PRICE_PACK: optStr,
 
     FREE_MAX_INFLIGHT: z.coerce.number().int().min(0).default(2),
     /** Spend guard: max characters generated across all users per rolling 24h. 0 = unlimited. */
@@ -67,27 +57,28 @@ const schema = z
     /** RFC 3339 start of the budget window for RunPod's billing API (e.g. the endpoint's creation day). */
     GPU_BUDGET_SINCE: optStr,
 
-    NEXT_PUBLIC_UMAMI_SRC: optStr,
-    NEXT_PUBLIC_UMAMI_WEBSITE_ID: optStr,
-
     ALLOW_DEV_BACKENDS: bool,
   })
   .superRefine((e, ctx) => {
     const issue = (message: string) => ctx.addIssue({ code: "custom", message });
     if (e.NODE_ENV === "production" && !e.ALLOW_DEV_BACKENDS) {
       if (e.TTS_BACKEND === "local") issue("TTS_BACKEND=local is not allowed in production");
-      if (e.STORAGE_BACKEND === "local") issue("STORAGE_BACKEND=local is not allowed in production");
       if (e.EMAIL_BACKEND === "log") issue("EMAIL_BACKEND=log is not allowed in production");
       if (e.CAPTCHA_DISABLED) issue("CAPTCHA_DISABLED is not allowed in production");
-      if (!e.PADDLE_WEBHOOK_SECRET) issue("PADDLE_WEBHOOK_SECRET is required in production");
     }
-    if (e.TTS_BACKEND === "runpod" && (!e.RUNPOD_API_KEY || !e.RUNPOD_ENDPOINT_ID))
-      issue("RUNPOD_API_KEY and RUNPOD_ENDPOINT_ID are required when TTS_BACKEND=runpod");
     if (e.STORAGE_BACKEND === "r2" && (!e.R2_ACCOUNT_ID || !e.R2_ACCESS_KEY_ID || !e.R2_SECRET_ACCESS_KEY || !e.R2_BUCKET))
       issue("R2_* variables are required when STORAGE_BACKEND=r2");
-    if (e.EMAIL_BACKEND === "resend" && !e.RESEND_API_KEY) issue("RESEND_API_KEY is required when EMAIL_BACKEND=resend");
-    if (!e.CAPTCHA_DISABLED && (!e.TURNSTILE_SECRET_KEY || !e.NEXT_PUBLIC_TURNSTILE_SITE_KEY))
-      issue("Turnstile keys are required unless CAPTCHA_DISABLED=1");
+  })
+  .transform((e) => {
+    const derive = (purpose: string) => createHmac("sha256", e.DATABASE_URL).update(`voicedrop:${purpose}`).digest("hex");
+    return {
+      ...e,
+      BETTER_AUTH_SECRET: e.BETTER_AUTH_SECRET ?? derive("auth"),
+      IP_HASH_SECRET: e.IP_HASH_SECRET ?? derive("ip-hash"),
+      RUNPOD_WEBHOOK_SECRET: e.RUNPOD_WEBHOOK_SECRET ?? derive("runpod-webhook"),
+      LOCAL_STORAGE_DIR:
+        e.LOCAL_STORAGE_DIR ?? (e.NODE_ENV === "production" ? path.join(homedir(), "voicedrop-storage") : ".data/storage"),
+    };
   });
 
 export type Env = z.output<typeof schema>;
@@ -111,4 +102,5 @@ export function env(): Env {
 /** Test helper: drop the cached env after mutating process.env. */
 export function resetEnvCache() {
   cached = undefined;
+  (globalThis as { __vdCfg?: unknown }).__vdCfg = undefined;
 }

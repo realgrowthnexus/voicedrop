@@ -11,7 +11,7 @@ import { HttpError } from "@/lib/http";
 /** Current user or null. Always reads the user row (so bans apply immediately). */
 export async function getUser(reqHeaders?: Headers): Promise<User | null> {
   const h = reqHeaders ?? (await headers());
-  const s = await auth().api.getSession({ headers: h });
+  const s = await (await auth()).api.getSession({ headers: h });
   if (!s) return null;
   const [u] = await db().select().from(user).where(eq(user.id, s.user.id));
   return u ?? null;

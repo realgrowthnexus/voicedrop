@@ -1,6 +1,8 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { SETTINGS, saveSettings } from "@/lib/config";
+import { sendEmail } from "@/lib/email";
 import { requireAdmin } from "@/lib/session";
 import { adjustCredits, banUser, moderate, setCompPlan, unbanUser } from "./ops";
 
@@ -44,4 +46,45 @@ export async function moderateAction(form: FormData) {
   await moderate(admin, jobId, decision);
   revalidatePath("/admin/flags");
   revalidatePath("/admin");
+}
+
+export type SettingsResult = { ok: boolean; message: string };
+
+/** Admin → Settings. Blank secret fields keep the stored value; tick "clear" to remove one. */
+export async function saveSettingsAction(_prev: SettingsResult | null, form: FormData): Promise<SettingsResult> {
+  const admin = await requireAdmin();
+  const patch: Record<string, string | undefined> = {};
+  for (const def of SETTINGS) {
+    const v = form.get(def.key);
+    const clear = form.get(`clear:${def.key}`) === "on";
+    if (clear) patch[def.key] = "";
+    else if (typeof v === "string") {
+      if (v.length > 2000) return { ok: false, message: `${def.label} is too long.` };
+      if (def.secret && !v.trim()) continue; // blank secret = keep
+      patch[def.key] = v;
+    }
+  }
+  if (patch.PADDLE_ENV && !["sandbox", "production"].includes(patch.PADDLE_ENV.trim())) {
+    return { ok: false, message: "Paddle environment must be “sandbox” or “production”." };
+  }
+  if (patch.SMTP_PORT && !/^\d{2,5}$/.test(patch.SMTP_PORT.trim())) return { ok: false, message: "SMTP port must be a number like 465." };
+  await saveSettings(patch, admin.id);
+  revalidatePath("/admin/settings");
+  revalidatePath("/login");
+  return { ok: true, message: "Saved. Changes are live now." };
+}
+
+export async function testEmailAction(): Promise<SettingsResult> {
+  const admin = await requireAdmin();
+  try {
+    await sendEmail({
+      to: admin.email,
+      subject: "VoiceDrop test email",
+      text: "If you can read this, VoiceDrop can send sign-in emails.",
+      html: "<p>If you can read this, VoiceDrop can send sign-in emails.</p>",
+    });
+    return { ok: true, message: `Test email sent to ${admin.email}. Check the inbox (and spam).` };
+  } catch (e) {
+    return { ok: false, message: `Sending failed: ${(e as Error).message}` };
+  }
 }

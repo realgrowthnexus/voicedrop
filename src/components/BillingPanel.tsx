@@ -127,6 +127,12 @@ export function BillingPanel({ initial, hasCustomer, paddle: paddleCfg }: { init
   return (
     <div className="max-w-4xl">
       <h1 className="title text-[clamp(2.4rem,5vw,3.4rem)]">Plan &amp; billing</h1>
+      {!paddleCfg ? (
+        <p role="status" className="mt-6 rounded-xl border border-line bg-surface px-4 py-3">
+          Paid plans open soon. The free plan is fully working in the meantime:{" "}
+          <Link href="/dashboard" className="link-underline font-semibold">make a voice-over</Link>.
+        </p>
+      ) : null}
       {msg ? (
         <p role={msg.kind === "error" ? "alert" : "status"} className={`mt-6 rounded-xl border px-4 py-3 ${msg.kind === "error" ? "border-danger/40 bg-danger/10" : "border-ok/40 bg-ok/10"}`}>
           {msg.text}

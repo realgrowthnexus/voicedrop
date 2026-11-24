@@ -17,6 +17,8 @@ export interface StorageAdapter {
   putUrl(key: string, contentType: string): Promise<string>;
   /** Short-lived URL for the browser to play or download the file. */
   getUrl(key: string, opts: GetOptions): Promise<string>;
+  /** Delete a stored file (no error if it is already gone). */
+  remove(key: string): Promise<void>;
 }
 
 export const URL_TTL_SEC = 15 * 60;

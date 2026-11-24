@@ -100,3 +100,25 @@ Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/super
 2. Owner: legal entity name/country for policy pages (`NEXT_PUBLIC_LEGAL_ENTITY`, `NEXT_PUBLIC_LEGAL_COUNTRY`).
 3. Deploy to Hostinger, run smoke test, measure real GPU cost/latency, then switch Paddle to production.
 4. Later: Urdu/Hindi voices (needs another model), team seats, API.
+
+## 2026-11-24 — "fully user-ready" pass (owner: login 500, no share card, can't generate)
+- Root cause of live `/login` 500: env schema required ~20 service keys the owner hadn't set.
+- New config model (`src/lib/config.ts`): Hostinger needs only `DATABASE_URL`, `ADMIN_EMAILS`, `SMTP_USER`,
+  `SMTP_PASSWORD`. Auth/IP/webhook secrets are HMAC-derived from DATABASE_URL (`src/lib/env.ts`). Service keys
+  (RunPod, Google, Turnstile, Paddle, Resend/SMTP) come from env first, else table `app_settings`
+  (migration 0002), edited in **Admin → Settings** (with a live System check: DB, RunPod health, storage
+  write test, email, budget). `auth()` is now async and rebuilt when the sign-in fingerprint changes.
+- Storage default is `disk` (`~/voicedrop-storage`, signed URLs at `/api/files/...` with HTTP Range for
+  Safari); expired files purged hourly from `pumpQueue`. R2 still available via env.
+- Email: nodemailer SMTP (Hostinger) or Resend; login hides methods that aren't configured.
+- Branding: new favicon (old v1 navy/yellow was still shipped), OG/Twitter card PNG, apple icon, manifest,
+  robots, sitemap. `scripts/brand-assets.cjs` regenerates them (fonts in `assets/fonts`).
+- RunPod GPU fixed: onnxruntime-gpu 1.32 is a CUDA 13 build → silently CPU. Pinned **1.23.2** (CUDA 12);
+  the worker image already has torch cu128 + nvidia cu12 libs, so no extra wheels (the [cuda,cudnn] extras
+  made the artifact 1.68 GB > 1.5 GB limit). Engine tries CUDA first, preloads libs only on fallback.
+  Measured: Ampere worker 935 chars → 56.7 s audio in 1.2 s. RunPod sometimes schedules a
+  **RTX PRO 6000 Blackwell** despite gpuIds AMPERE_16,AMPERE_24 → CUDA EP fails there → CPU (~11 s);
+  budget estimate raised to 12 s/1k chars. Diagnose: `{"input":{"job":{"diagnose":true}}}` (step-timed).
+  FlashBoot keeps old-code workers alive for a while after a deploy; retry.
+- RunPod spend so far ≈ $0.14 (billing API). rest.runpod.io is unreachable from this sandbox; GraphQL at
+  api.runpod.io works for reading endpoint config.

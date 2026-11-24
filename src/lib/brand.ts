@@ -1,5 +1,7 @@
 /** Single source of truth for the product name. Change here to rebrand. */
 export const BRAND = "VoiceDrop";
+/** Canonical public address. */
+export const SITE_URL = "https://voicedrop.rest";
 export const TAGLINE = "Paste a script. Drop a natural voice-over.";
 /** Public support address (footer, legal pages). Set NEXT_PUBLIC_SUPPORT_EMAIL at build time. */
 export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@voicedrop.rest";

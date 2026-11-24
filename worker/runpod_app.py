@@ -1,4 +1,4 @@
-"""VoiceoverDrop TTS on RunPod Serverless (Runpod Python SDK 2.x apps).
+"""VoiceDrop TTS on RunPod Serverless (Runpod Python SDK 2.x apps).
 
 Deploy from this directory:  RUNPOD_API_KEY=... runpod flash deploy
 
@@ -26,7 +26,7 @@ KOKORO = Model("onnx-community/Kokoro-82M-v1.0-ONNX-timestamped:dd4401a9add81ac6
     flashboot=True,
     model=KOKORO,  # staged by the platform: no download on cold start
     dependencies=[
-        "onnxruntime-gpu==1.32.0",
+        "onnxruntime-gpu==1.23.2",  # CUDA 12 build (1.24+ needs CUDA 13 drivers); CUDA/cuDNN libs come from the worker image
         "espeakng-loader==0.2.4",
         "phonemizer==3.6.0",
         "numpy==2.4.6",
@@ -48,4 +48,4 @@ def synthesize(job: dict) -> dict:
 
 @runpod.local_entrypoint
 def main():
-    print(synthesize.remote({"job_id": "smoke", "text": "Hello from VoiceoverDrop.", "voice": "af_heart", "formats": [], "uploads": {}}))
+    print(synthesize.remote({"job_id": "smoke", "text": "Hello from VoiceDrop.", "voice": "af_heart", "formats": [], "uploads": {}}))

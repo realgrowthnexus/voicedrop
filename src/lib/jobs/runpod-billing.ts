@@ -1,4 +1,5 @@
 import "server-only";
+import { cfg } from "@/lib/config";
 import { env } from "@/lib/env";
 
 type Cache = { at: number; usd: number | null };
@@ -12,14 +13,15 @@ const TTL_MS = 2 * 60 * 1000;
  */
 export async function runpodActualSpendUsd(now = Date.now()): Promise<number | null> {
   const e = env();
-  if (e.TTS_BACKEND !== "runpod" || !e.RUNPOD_ENDPOINT_ID || !e.RUNPOD_API_KEY) return null;
+  const t = (await cfg()).tts;
+  if (t.mode !== "runpod") return null;
   const c = g.__vdRunpodSpend;
   if (c && now - c.at < TTL_MS) return c.usd;
   try {
-    const q = new URLSearchParams({ serverlessId: e.RUNPOD_ENDPOINT_ID, bucketSize: "day" });
+    const q = new URLSearchParams({ serverlessId: t.endpointId, bucketSize: "day" });
     if (e.GPU_BUDGET_SINCE) q.set("startTime", e.GPU_BUDGET_SINCE);
     const res = await fetch(`https://api.runpod.io/v2/billing/serverless?${q}`, {
-      headers: { authorization: `Bearer ${e.RUNPOD_API_KEY}` },
+      headers: { authorization: `Bearer ${t.apiKey}` },
       signal: AbortSignal.timeout(8000),
       cache: "no-store",
     });

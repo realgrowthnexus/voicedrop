@@ -74,6 +74,33 @@ test("signed-in pages are polished on a phone", async ({ browser }) => {
 test("admin pages are polished", async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
   await signIn(page, process.env.E2E_ADMIN_EMAIL ?? "owner@example.com");
-  for (const path of ["/admin", "/admin/users", "/admin/jobs", "/admin/flags"]) await audit(page, path);
+  for (const path of ["/admin", "/admin/users", "/admin/jobs", "/admin/flags", "/admin/settings"]) await audit(page, path);
+  await page.close();
+});
+
+test("admin can turn on Google sign-in from Settings without touching the host", async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await signIn(page, process.env.E2E_ADMIN_EMAIL ?? "owner@example.com");
+  await page.goto("/admin/settings");
+  await expect(page.getByRole("heading", { name: "System check" })).toBeVisible();
+  await expect(page.getByText("Connected.")).toBeVisible();
+  await page.getByLabel("Google client ID").fill("e2e-client.apps.googleusercontent.com");
+  await page.getByLabel("Google client secret").fill("e2e-secret");
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await expect(page.getByText("Saved. Changes are live now.")).toBeVisible();
+
+  const visitor = await browser.newPage();
+  await visitor.goto("/login");
+  await expect(visitor.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+
+  // Clean up so other tests see the default login.
+  await page.reload();
+  await page.getByLabel("Google client ID").fill("");
+  await page.getByLabel("Remove this value").first().check();
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await expect(page.getByText("Saved. Changes are live now.")).toBeVisible();
+  await visitor.goto("/login");
+  await expect(visitor.getByRole("button", { name: "Continue with Google" })).toHaveCount(0);
+  await visitor.close();
   await page.close();
 });

@@ -27,8 +27,20 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...devEnv, NODE_ENV: "production" })).toThrow(/not allowed in production/);
   });
 
-  it("requires runpod credentials when TTS_BACKEND=runpod", () => {
-    expect(() => parseEnv({ ...devEnv, TTS_BACKEND: "runpod" })).toThrow(/RUNPOD_API_KEY/);
+  it("needs only a database URL in production; secrets are derived from it", () => {
+    const e = parseEnv({ NODE_ENV: "production", DATABASE_URL: "postgres://u:p@db.example/x" });
+    expect(e.APP_URL).toBe("https://voicedrop.rest");
+    expect(e.BETTER_AUTH_SECRET).toMatch(/^[0-9a-f]{64}$/);
+    expect(e.IP_HASH_SECRET).not.toBe(e.BETTER_AUTH_SECRET);
+    expect(e.STORAGE_BACKEND).toBe("disk");
+    expect(e.LOCAL_STORAGE_DIR).toMatch(/voicedrop-storage$/);
+    // Deterministic, so every server process agrees.
+    expect(parseEnv({ NODE_ENV: "production", DATABASE_URL: "postgres://u:p@db.example/x" }).BETTER_AUTH_SECRET).toBe(e.BETTER_AUTH_SECRET);
+    expect(parseEnv({ NODE_ENV: "production", DATABASE_URL: "postgres://u:q@db.example/x" }).BETTER_AUTH_SECRET).not.toBe(e.BETTER_AUTH_SECRET);
+  });
+
+  it("requires a database URL", () => {
+    expect(() => parseEnv({ NODE_ENV: "production" })).toThrow(/DATABASE_URL/);
   });
 
   it("rejects short secrets", () => {
