@@ -65,7 +65,7 @@ Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/super
      (`GET api.runpod.io/v2/billing/serverless?serverlessId=`); spend = max(estimate, billed).
   3. Endpoint caps: max 1 worker, idle 5 s, execution timeout 300 s.
   - RunPod account balance is ~$212 (shared with other projects), so prepaid balance is NOT the cap.
-- Worker image: GitHub Actions `.github/workflows/worker-image.yml` → `ghcr.io/realgrowthnexus/voiceoverdrop-worker:{sha,dev,latest}`.
+- Worker image via GitHub Actions/GHCR was dropped (Actions jobs on this account fail in 2 s without logs); the endpoint is deployed with the RunPod SDK instead (`worker/runpod_app.py`).
   Package must be made **public** (or RunPod given a registry credential) before the endpoint can pull it.
 - GPU choice: pools AMPERE_16 ($0.58/h) + AMPERE_24 ($0.75/h) fallback; budget uses $0.00021/s.
 - Owner pasted a RunPod API key in chat → must be **rotated** after setup (create a new key, delete the old one).
