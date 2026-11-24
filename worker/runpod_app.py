@@ -36,6 +36,11 @@ KOKORO = Model("onnx-community/Kokoro-82M-v1.0-ONNX-timestamped:dd4401a9add81ac6
 )
 def synthesize(job: dict) -> dict:
     """job = the same JSON the Docker handler takes (job_id, text, voice, speed, formats, uploads)."""
+    if job.get("diagnose") is True:  # operator-only GPU check; no user data involved
+        from vd_worker.diagnose import gpu_report
+
+        return gpu_report()
+
     from vd_worker.handler import process_job
 
     return process_job(job)

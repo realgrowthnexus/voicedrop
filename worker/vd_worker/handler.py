@@ -108,8 +108,15 @@ def process_job(inp: dict[str, Any], engine: Engine | None = None) -> dict[str, 
     }
 
 
+def unwrap(inp: dict[str, Any]) -> dict[str, Any]:
+    """Accept both `{"job": {...}}` (SDK 2 app shape, what the web app sends) and the bare job."""
+    if isinstance(inp, dict) and isinstance(inp.get("job"), dict):
+        return inp["job"]
+    return inp
+
+
 def runpod_handler(job: dict[str, Any]) -> dict[str, Any]:
-    return process_job(job.get("input") or {})
+    return process_job(unwrap(job.get("input") or {}))
 
 
 if __name__ == "__main__":

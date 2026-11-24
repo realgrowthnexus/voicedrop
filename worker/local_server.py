@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vd_worker.handler import get_engine, process_job  # noqa: E402
+from vd_worker.handler import get_engine, process_job, unwrap  # noqa: E402
 
 os.environ.setdefault("VD_ALLOW_HTTP_UPLOADS", "1")
 TOKEN = os.environ.get("LOCAL_WORKER_TOKEN", "")
@@ -37,7 +37,7 @@ def worker_loop() -> None:
         job_id, inp, webhook = work.get()
         jobs[job_id]["status"] = "IN_PROGRESS"
         try:
-            out = process_job(inp, eng)
+            out = process_job(unwrap(inp), eng)
             jobs[job_id].update(status="COMPLETED", output=out)
         except Exception as e:  # noqa: BLE001
             traceback.print_exc()
