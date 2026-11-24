@@ -1,24 +1,26 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { VoiceLine, attachAnalyser } from "./VoiceLine";
 
 type Word = { w: string; s: number; e: number };
 type Demo = { duration: number; words: Word[] };
 
 const DEMO_VOICES = [
-  { id: "blend_michael_fenrir", name: "Atlas", note: "deep US male" },
-  { id: "af_heart", name: "Heart", note: "warm US female" },
-  { id: "bm_george", name: "George", note: "British male" },
-  { id: "bf_emma", name: "Emma", note: "British female" },
+  { id: "blend_michael_fenrir", name: "Atlas", note: "Deep US narrator" },
+  { id: "af_heart", name: "Heart", note: "Warm US voice" },
+  { id: "bm_george", name: "George", note: "British storyteller" },
+  { id: "bf_emma", name: "Emma", note: "Polished British voice" },
 ];
 
 const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
-/** The script reads itself: words get highlighted exactly as the voice speaks them. */
+/** The stage: a script that reads itself while the voice line follows the real audio. */
 export function HeroDemo({ fallbackText }: { fallbackText: string }) {
   const [voice, setVoice] = useState(DEMO_VOICES[0].id);
   const [demo, setDemo] = useState<Demo | null>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const audio = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -32,7 +34,6 @@ export function HeroDemo({ fallbackText }: { fallbackText: string }) {
     };
   }, [voice]);
 
-  // While playing, follow the audio clock every frame.
   useEffect(() => {
     if (!playing) return;
     let id = 0;
@@ -47,8 +48,10 @@ export function HeroDemo({ fallbackText }: { fallbackText: string }) {
   function toggle() {
     const a = audio.current;
     if (!a) return;
-    if (a.paused) void a.play();
-    else a.pause();
+    if (a.paused) {
+      setAnalyser(attachAnalyser(a));
+      void a.play();
+    } else a.pause();
   }
 
   function pick(id: string) {
@@ -57,62 +60,77 @@ export function HeroDemo({ fallbackText }: { fallbackText: string }) {
     a?.pause();
     setTime(0);
     setVoice(id);
-    if (wasPlaying) setTimeout(() => void audio.current?.play(), 50);
+    if (wasPlaying) setTimeout(() => void audio.current?.play(), 60);
   }
 
   const words = demo?.words;
   const spoken = words ? words.filter((w) => w.s <= time + 0.02).length : 0;
   const duration = demo?.duration ?? 0;
   const current = DEMO_VOICES.find((v) => v.id === voice)!;
+  const progress = duration ? Math.min(1, time / duration) : 0;
 
   return (
-    <div className="relative rounded-[22px] border border-rule bg-surface shadow-[0_1px_0_var(--rule),0_24px_48px_-28px_rgba(23,26,51,0.35)]">
-      <div className="flex items-center justify-between border-b border-rule px-5 py-3 text-sm text-graphite sm:px-7">
-        <span className="script-text">ocean-short.txt</span>
-        <span className="script-text tabular-nums" aria-live="off">
-          {fmt(time)} / {fmt(duration)}
-        </span>
+    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-stage text-stage-ink shadow-[0_40px_120px_-40px_rgba(255,181,71,0.25)]">
+      {/* lamp glow */}
+      <div aria-hidden className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[70%] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,181,71,0.22),transparent)] blur-2xl" />
+
+      <div className="relative h-28 px-4 sm:h-36 sm:px-8">
+        <VoiceLine analyser={playing ? analyser : null} />
       </div>
 
-      <p className="script-text px-5 py-6 text-[1.2rem] leading-[1.75] sm:px-7 sm:py-8 sm:text-[1.45rem]" aria-label="Demo script">
+      <p
+        className="script-text relative px-5 pb-8 text-[1.12rem] leading-[1.8] sm:px-10 sm:text-[1.4rem]"
+        aria-label="Demo script"
+      >
         {words
           ? words.map((w, i) => (
-              <span key={i} className={i < spoken ? "marker transition-colors duration-150" : "text-graphite"}>
+              <span key={i} className={i < spoken ? "spoken" : "unspoken"}>
                 {w.w}
                 {i < words.length - 1 ? " " : ""}
               </span>
             ))
-          : fallbackText}
+          : <span className="text-stage-mute">{fallbackText}</span>}
       </p>
 
-      <div className="flex flex-col gap-4 border-t border-rule px-5 py-4 sm:flex-row sm:items-center sm:px-7">
-        <button
-          type="button"
-          onClick={toggle}
-          aria-pressed={playing}
-          className="inline-flex h-12 items-center gap-3 self-start rounded-full bg-ink pl-4 pr-5 font-semibold text-paper hover:opacity-90"
-        >
-          {playing ? (
-            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1" /><rect x="14" y="4" width="5" height="16" rx="1" /></svg>
-          ) : (
-            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z" /></svg>
-          )}
-          {playing ? "Pause" : `Play ${current.name}`}
-        </button>
-        <fieldset className="flex flex-wrap gap-2">
-          <legend className="sr-only">Choose a demo voice</legend>
-          {DEMO_VOICES.map((v) => (
-            <label
-              key={v.id}
-              className={`cursor-pointer rounded-full border px-3.5 py-2 text-sm has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-focus ${
-                voice === v.id ? "border-ink bg-ink text-paper" : "border-rule text-graphite hover:border-graphite hover:text-ink"
-              }`}
-            >
-              <input type="radio" name="demo-voice" value={v.id} checked={voice === v.id} onChange={() => pick(v.id)} className="sr-only" />
-              <span className="font-semibold">{v.name}</span> <span className={voice === v.id ? "opacity-80" : ""}>· {v.note}</span>
-            </label>
-          ))}
-        </fieldset>
+      <div className="relative border-t border-white/10 px-5 py-4 sm:px-8">
+        <div className="absolute inset-x-0 top-0 h-px bg-white/5" aria-hidden>
+          <div className="h-px bg-lamp transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
+        </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-pressed={playing}
+            aria-label={playing ? "Pause" : `Play ${current.name}`}
+            className="btn btn-primary btn-lg self-start pl-2"
+          >
+            <span className="grid size-10 place-items-center rounded-full bg-lamp-ink/10">
+              {playing ? (
+                <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5" /><rect x="14" y="4" width="5" height="16" rx="1.5" /></svg>
+              ) : (
+                <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z" /></svg>
+              )}
+            </span>
+            {playing ? "Pause" : `Play ${current.name}`}
+          </button>
+          <fieldset className="flex flex-wrap gap-2">
+            <legend className="sr-only">Choose a demo voice</legend>
+            {DEMO_VOICES.map((v) => (
+              <label
+                key={v.id}
+                className={`cursor-pointer rounded-full border px-3.5 py-2 text-sm transition-colors duration-300 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)] ${
+                  voice === v.id ? "border-lamp/70 bg-lamp/10 text-stage-ink" : "border-white/12 text-stage-mute hover:border-white/30 hover:text-stage-ink"
+                }`}
+              >
+                <input type="radio" name="demo-voice" value={v.id} checked={voice === v.id} onChange={() => pick(v.id)} className="sr-only" />
+                <span className="font-semibold">{v.name}</span> <span className="hidden sm:inline">{v.note}</span>
+              </label>
+            ))}
+          </fieldset>
+          <span className="script-text ml-auto hidden text-sm tabular-nums text-stage-mute sm:block" aria-hidden>
+            {fmt(time)} / {fmt(duration)}
+          </span>
+        </div>
       </div>
 
       <audio

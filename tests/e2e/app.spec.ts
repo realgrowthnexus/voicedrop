@@ -3,6 +3,18 @@ import { expect, test } from "@playwright/test";
 import { signIn, sql, uniqueEmail } from "./helpers";
 
 // @axe-core/playwright is typed against a newer playwright-core; the runtime API is identical.
+/** Scroll like a reader so scroll-reveals and entrance animations have finished before axe looks. */
+async function settle(page: import("@playwright/test").Page) {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 400) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    window.scrollTo(0, 0);
+  });
+  await page.waitForTimeout(1300);
+}
+
 const axe = (page: unknown) => new AxeBuilder({ page: page as ConstructorParameters<typeof AxeBuilder>[0]["page"] });
 
 test.afterAll(async () => {
@@ -13,7 +25,7 @@ test("hero demo highlights words while it plays", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Play Atlas", exact: true }).click();
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
-  await expect.poll(() => page.locator("p[aria-label='Demo script'] .marker").count(), { timeout: 15_000 }).toBeGreaterThan(5);
+  await expect.poll(() => page.locator("p[aria-label='Demo script'] .spoken").count(), { timeout: 15_000 }).toBeGreaterThan(5);
 });
 
 test("signed-out visitors are sent to sign in, admin is hidden", async ({ page }) => {
@@ -65,9 +77,11 @@ test("banned user loses access immediately", async ({ page }) => {
 for (const scheme of ["light", "dark"] as const) {
   test(`no serious accessibility violations (${scheme})`, async ({ browser }) => {
     const ctx = await browser.newContext({ colorScheme: scheme });
+    if (scheme === "light") await ctx.addInitScript(() => localStorage.setItem("theme", "light"));
     const page = await ctx.newPage();
     for (const path of ["/", "/pricing", "/voices", "/login", "/terms"]) {
       await page.goto(path);
+      await settle(page);
       const r = await axe(page).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
       const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
       expect(bad.map((v) => `${path}: ${v.id} (${v.nodes.length})`)).toEqual([]);
@@ -76,7 +90,8 @@ for (const scheme of ["light", "dark"] as const) {
     await signIn(page, email);
     for (const path of ["/dashboard", "/history", "/billing"]) {
       await page.goto(path);
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("load");
+      await settle(page);
       const r = await axe(page).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
       const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
       expect(bad.map((v) => `${path}: ${v.id} ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(", ")}`)).toEqual([]);

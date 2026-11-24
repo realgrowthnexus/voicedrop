@@ -32,19 +32,19 @@ export default async function AdminHome() {
   const f = s.funnel30d;
   return (
     <div>
-      <h1 className="text-3xl font-extrabold tracking-tight">Overview</h1>
+      <h1 className="title text-[clamp(2rem,4vw,2.8rem)]">Overview</h1>
       {s.queue.held > 0 ? (
         <p className="mt-4 rounded-xl border border-ink bg-surface px-4 py-3">
-          <span className="marker px-1 font-semibold">{s.queue.held} flagged script{s.queue.held > 1 ? "s" : ""}</span> waiting for review.{" "}
+          <span className="rounded bg-lamp px-1.5 text-lamp-ink font-semibold">{s.queue.held} flagged script{s.queue.held > 1 ? "s" : ""}</span> waiting for review.{" "}
           <Link href="/admin/flags" className="font-semibold underline underline-offset-4">Review now</Link>
         </p>
       ) : null}
-      <dl className="mt-6 grid gap-px overflow-hidden rounded-[20px] border border-rule bg-rule sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="mt-6 grid gap-px overflow-hidden rounded-[20px] border border-line bg-line sm:grid-cols-2 lg:grid-cols-3 sm:[&>div:last-child]:col-span-2 lg:[&>div:last-child]:col-span-3">
         {rows.map(([k, v, sub]) => (
           <div key={k} className="bg-surface p-5">
-            <dt className="text-sm text-graphite">{k}</dt>
-            <dd className="mt-1 text-3xl font-extrabold tracking-tight">{v}</dd>
-            {sub ? <dd className="text-sm text-graphite">{sub}</dd> : null}
+            <dt className="text-sm text-mute">{k}</dt>
+            <dd className="mt-1 title text-[clamp(2rem,4vw,2.8rem)]">{v}</dd>
+            {sub ? <dd className="text-sm text-mute">{sub}</dd> : null}
           </div>
         ))}
       </dl>
@@ -56,20 +56,20 @@ export default async function AdminHome() {
           ["Opened checkout", f.openedCheckout, pct(f.openedCheckout, f.signedUp)],
           ["Paid", f.paid, pct(f.paid, f.signedUp)],
         ].map(([label, v, p], i) => (
-          <li key={label as string} className="rounded-2xl border border-rule bg-surface p-4">
-            <p className="text-sm text-graphite">
+          <li key={label as string} className="rounded-2xl border border-line bg-surface p-4">
+            <p className="text-sm text-mute">
               Step {i + 1}: {label}
             </p>
             <p className="text-2xl font-extrabold">{n(v as number)}</p>
-            {p ? <p className="text-sm text-graphite">{p} of sign-ups</p> : null}
+            {p ? <p className="text-sm text-mute">{p} of sign-ups</p> : null}
           </li>
         ))}
       </ol>
-      <p className="mt-6 text-sm text-graphite">
+      <p className="mt-6 text-sm text-mute">
         Setup check: the server sees your IP as <b className="text-ink">{seenIp}</b> via the <code>{env().IP_HEADER}</code> header.
         {seenIp === "unknown" ? " Per-IP sign-up limits are OFF until this shows your real public IP — see docs/DEPLOY.md." : " Per-IP limits are working."}
       </p>
-      <p className="mt-2 text-sm text-graphite">Website visitors and traffic sources are in Umami. Stale jobs are cleaned up each time this page loads.</p>
+      <p className="mt-2 text-sm text-mute">Website visitors and traffic sources are in Umami. Stale jobs are cleaned up each time this page loads.</p>
     </div>
   );
 }

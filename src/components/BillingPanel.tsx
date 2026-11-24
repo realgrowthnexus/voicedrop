@@ -15,14 +15,14 @@ function Meter({ label, used, total, note }: { label: string; used: number; tota
     <div>
       <div className="flex justify-between gap-3 text-sm">
         <span className="font-semibold">{label}</span>
-        <span className="script-text tabular-nums text-graphite">
+        <span className="script-text tabular-nums text-mute">
           {n(Math.max(0, total - used))} / {n(total)} left
         </span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-rule" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={total} aria-valuenow={Math.max(0, total - used)}>
-        <div className="h-2 rounded-full bg-ink" style={{ width: `${100 - pct}%` }} />
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-line" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={total} aria-valuenow={Math.max(0, total - used)}>
+        <div className="h-2 rounded-full bg-lamp" style={{ width: `${100 - pct}%` }} />
       </div>
-      {note ? <p className="mt-1 text-sm text-graphite">{note}</p> : null}
+      {note ? <p className="mt-1 text-sm text-mute">{note}</p> : null}
     </div>
   );
 }
@@ -125,20 +125,20 @@ export function BillingPanel({ initial, hasCustomer, paddle: paddleCfg }: { init
   const paidPlan = me.plan?.source === "paddle" ? me.plan.plan : null;
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Plan &amp; billing</h1>
+    <div className="max-w-4xl">
+      <h1 className="title text-[clamp(2.4rem,5vw,3.4rem)]">Plan &amp; billing</h1>
       {msg ? (
         <p role={msg.kind === "error" ? "alert" : "status"} className={`mt-6 rounded-xl border px-4 py-3 ${msg.kind === "error" ? "border-danger/40 bg-danger/10" : "border-ok/40 bg-ok/10"}`}>
           {msg.text}
         </p>
       ) : null}
 
-      <section className="mt-8 rounded-[20px] border border-rule bg-surface p-6" aria-labelledby="current">
+      <section className="mt-8 rounded-[20px] border border-line bg-surface p-6" aria-labelledby="current">
         <h2 id="current" className="text-xl font-bold">
-          You&apos;re on <span className="marker px-1">{PLAN_NAME[me.tier]}</span>
+          You&apos;re on <span className="rounded-md bg-lamp px-1.5 text-lamp-ink">{PLAN_NAME[me.tier]}</span>
         </h2>
         {me.plan ? (
-          <p className="mt-1 text-graphite">
+          <p className="mt-1 text-mute">
             {me.plan.source === "comp" ? "Complimentary plan" : "Renews or ends"} on{" "}
             {new Date(me.plan.periodEnd).toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" })}.
           </p>
@@ -151,14 +151,14 @@ export function BillingPanel({ initial, hasCustomer, paddle: paddleCfg }: { init
           {b.packRemaining > 0 ? (
             <p className="flex justify-between text-sm">
               <span className="font-semibold">Credit pack characters (never expire)</span>
-              <span className="script-text tabular-nums text-graphite">{n(b.packRemaining)}</span>
+              <span className="script-text tabular-nums text-mute">{n(b.packRemaining)}</span>
             </p>
           ) : null}
           {b.dailyCap ? <Meter label="Today's fair-use limit" used={b.usedLast24h} total={b.dailyCap} note="Rolling 24 hours." /> : null}
         </div>
         <div className="mt-6 flex flex-wrap gap-2">
           {hasCustomer ? (
-            <button type="button" onClick={portal} disabled={busy !== null} className="inline-flex h-11 items-center rounded-full border border-ink px-5 font-semibold hover:bg-ink hover:text-paper disabled:opacity-50">
+            <button type="button" onClick={portal} disabled={busy !== null} className="btn btn-secondary">
               {busy === "portal" ? "Opening…" : "Invoices, payment method & cancel"}
             </button>
           ) : null}
@@ -169,19 +169,19 @@ export function BillingPanel({ initial, hasCustomer, paddle: paddleCfg }: { init
         {(["creator", "pro"] as const).map((p) => {
           const isCurrent = paidPlan === p;
           return (
-            <div key={p} className={`rounded-[20px] border p-6 ${isCurrent ? "border-ink bg-surface" : "border-rule bg-surface"}`}>
+            <div key={p} className={`rounded-[20px] border p-6 transition-colors duration-300 ${isCurrent ? "border-lamp/60 bg-surface-2" : "border-line bg-surface"}`}>
               <h3 className="text-lg font-bold">
-                {PLAN_NAME[p]} · ${p === "creator" ? 9 : 19}/month
+                {PLAN_NAME[p]}, ${p === "creator" ? 9 : 19} a month
               </h3>
-              <p className="mt-1 text-graphite">{p === "creator" ? "100,000" : "300,000"} characters a month, WAV + SRT, priority queue.</p>
+              <p className="mt-1 text-mute">{p === "creator" ? "100,000" : "300,000"} characters a month, WAV + SRT, priority queue.</p>
               {isCurrent ? (
                 <p className="mt-4 font-semibold">Your current plan</p>
               ) : paidPlan ? (
-                <button type="button" onClick={() => changePlan(p)} disabled={busy !== null} className="mt-4 inline-flex h-11 items-center rounded-full bg-ink px-5 font-semibold text-paper hover:opacity-90 disabled:opacity-50">
+                <button type="button" onClick={() => changePlan(p)} disabled={busy !== null} className="mt-5 btn btn-secondary">
                   {busy === p ? "Switching…" : `Switch to ${PLAN_NAME[p]}`}
                 </button>
               ) : (
-                <button type="button" onClick={() => buy(p)} disabled={busy !== null} className="mt-4 inline-flex h-11 items-center rounded-full bg-ink px-5 font-semibold text-paper hover:opacity-90 disabled:opacity-50">
+                <button type="button" onClick={() => buy(p)} disabled={busy !== null} className={`mt-5 btn ${p === "creator" ? "btn-primary" : "btn-secondary"}`}>
                   {busy === p ? "Opening checkout…" : `Choose ${PLAN_NAME[p]}`}
                 </button>
               )}
@@ -190,15 +190,15 @@ export function BillingPanel({ initial, hasCustomer, paddle: paddleCfg }: { init
         })}
       </section>
 
-      <section className="mt-4 rounded-[20px] border border-dashed border-graphite/60 p-6" aria-labelledby="packs">
+      <section className="mt-4 rounded-[20px] border border-dashed border-line-strong p-6" aria-labelledby="packs">
         <h3 id="packs" className="text-lg font-bold">
-          Credit packs · $5 for 50,000 characters
+          Credit packs: $5 for 50,000 characters
         </h3>
-        <p className="mt-1 text-graphite">Never expire. Works on any plan and unlocks WAV and SRT.</p>
+        <p className="mt-1 text-mute">Never expire. Works on any plan and unlocks WAV and SRT.</p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2">
             <span className="text-sm font-semibold">Packs</span>
-            <select value={packs} onChange={(e) => setPacks(Number(e.target.value))} className="h-11 rounded-xl border border-rule bg-surface px-3">
+            <select value={packs} onChange={(e) => setPacks(Number(e.target.value))} className="field h-11 w-auto">
               {[1, 2, 3, 4, 5, 10].map((q) => (
                 <option key={q} value={q}>
                   {q} × 50,000 (${q * 5})
@@ -206,13 +206,13 @@ export function BillingPanel({ initial, hasCustomer, paddle: paddleCfg }: { init
               ))}
             </select>
           </label>
-          <button type="button" onClick={() => buy("pack", packs)} disabled={busy !== null} className="inline-flex h-11 items-center rounded-full border border-ink px-5 font-semibold hover:bg-ink hover:text-paper disabled:opacity-50">
+          <button type="button" onClick={() => buy("pack", packs)} disabled={busy !== null} className="btn btn-secondary">
             {busy === "pack" ? "Opening checkout…" : "Buy credits"}
           </button>
         </div>
       </section>
-      <p className="mt-6 text-sm text-graphite">
-        Payments are processed by Paddle.com, our merchant of record, who handles taxes and invoices. See our <Link href="/refunds" className="underline underline-offset-4">refund policy</Link>.
+      <p className="mt-6 text-sm text-mute">
+        Payments are processed by Paddle.com, our merchant of record, who handles taxes and invoices. See our <Link href="/refunds" className="link-underline text-ink">refund policy</Link>.
       </p>
     </div>
   );

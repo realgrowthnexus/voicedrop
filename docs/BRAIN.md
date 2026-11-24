@@ -70,6 +70,25 @@ Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/super
 - GPU choice: pools AMPERE_16 ($0.58/h) + AMPERE_24 ($0.75/h) fallback; budget uses $0.00021/s.
 - Owner pasted a RunPod API key in chat → must be **rotated** after setup (create a new key, delete the old one).
 
+## Redesign v2 (2026-11-24) — "Studio after dark"
+- Owner said v1 looked generic; reference for craft: courtoflove.art (not colours). Design system in `docs/design/brand.md`.
+- Tokens in `src/app/globals.css` (dark default, `data-theme="light"` opt-in; component classes live in `@layer components`
+  so Tailwind utilities can override them). Fonts: Instrument Sans (wdth axis) + Courier Prime for scripts.
+- Signature: `VoiceLine` canvas (draws in, breathes idle, real waveform via Web Audio analyser on same-origin samples).
+- Motion: Lenis smooth scroll (`SmoothScroll`), `Reveal`, line-mask headline, marquee, scroll-drawn `Steps`, ViewTransition
+  route cross-fades, skeletons (`Skeleton`, `loading.tsx`), custom player + range sliders. Reduced motion fully handled.
+- Build uses webpack (`next build --webpack`) + `@tailwindcss/postcss`: Hostinger's build box can't spawn Turbopack's
+  CSS worker process.
+- e2e axe runs on 8 pages in both themes after scrolling (reveals) — all clean.
+
+## RunPod endpoint (deployed 2026-11-24)
+- `voiceoverdrop-tts` id `lizqs4oqlbbm62` via Runpod SDK 2 (`worker/runpod_app.py`, `runpod flash deploy`), image
+  runpod/queue-gpu:py3.11; workers 0..1, idle 5 s, timeout 300 s, pools AMPERE_16/24, model staged from HF.
+- Request shape: `{"input": {"job": {...}}}` (app sends this). Smoke job COMPLETED (7.7 s audio, uploads OK).
+- OPEN ISSUE: worker ran on CPUExecutionProvider (GPU billed, CPU used). `{"input":{"job":{"diagnose":true}}}` returns a
+  GPU report — run it, fix CUDA libs (likely add nvidia-cudnn-cu12/cublas or use onnxruntime-gpu[cuda,cudnn]), redeploy.
+- Deploying from the sandbox needs a local aiohttp proxy shim (trust_env) — see session notes; not needed elsewhere.
+
 ## Next steps
 1. Owner: buy domain, create accounts (Neon, Cloudflare R2+Turnstile, Resend, Google OAuth, RunPod, Paddle) — `docs/DEPLOY.md`.
 2. Owner: legal entity name/country for policy pages (`NEXT_PUBLIC_LEGAL_ENTITY`, `NEXT_PUBLIC_LEGAL_COUNTRY`).

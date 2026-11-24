@@ -6,8 +6,8 @@ import { requireAdminPage } from "@/lib/session";
 
 const n = (x: number) => x.toLocaleString("en-US");
 const t = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace("T", " ") : "–");
-const btn = "h-10 rounded-full px-4 text-sm font-semibold";
-const input = "h-10 rounded-xl border border-rule bg-surface px-3 text-sm";
+const btn = "btn btn-sm";
+const input = "field h-10 text-sm";
 
 export default async function AdminUser({ params }: { params: Promise<{ id: string }> }) {
   await requireAdminPage();
@@ -18,14 +18,14 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
   const u = d.user;
   return (
     <div>
-      <h1 className="break-all text-2xl font-extrabold tracking-tight sm:text-3xl">{u.email}</h1>
-      <p className="mt-1 text-sm text-graphite">
+      <h1 className="break-all title text-[clamp(1.6rem,3vw,2.2rem)]">{u.email}</h1>
+      <p className="mt-1 text-sm text-mute">
         ID {u.id} · joined {t(u.createdAt)} UTC · {u.paddleCustomerId ? `Paddle ${u.paddleCustomerId}` : "no Paddle customer"}
       </p>
       {u.banned ? <p className="mt-3 font-semibold text-danger">Banned: {u.banReason}</p> : null}
 
       <section className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="rounded-[20px] border border-rule bg-surface p-5">
+        <div className="rounded-[20px] border border-line bg-surface p-5">
           <h2 className="font-bold">Balance</h2>
           <ul className="mt-2 space-y-1 text-sm">
             <li>Tier: <b>{s.tier}</b>{s.plan ? ` (${s.plan.source}, until ${s.plan.periodEnd.slice(0, 10)})` : ""}</li>
@@ -35,13 +35,13 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
             <li>Used last 24 h: {n(s.balances.usedLast24h)}</li>
           </ul>
         </div>
-        <div className="space-y-4 rounded-[20px] border border-rule bg-surface p-5">
+        <div className="space-y-4 rounded-[20px] border border-line bg-surface p-5">
           <h2 className="font-bold">Actions</h2>
           <form action={creditsAction} className="flex flex-wrap items-end gap-2">
             <input type="hidden" name="userId" value={u.id} />
             <label className="text-sm">Credits (+/−)<input name="delta" type="number" required className={`${input} mt-1 block w-28`} /></label>
             <label className="text-sm">Note<input name="note" className={`${input} mt-1 block w-40`} /></label>
-            <button className={`${btn} bg-ink text-paper`}>Apply</button>
+            <button className={`${btn} btn-primary`}>Apply</button>
           </form>
           <form action={compPlanAction} className="flex flex-wrap items-end gap-2">
             <input type="hidden" name="userId" value={u.id} />
@@ -51,15 +51,15 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               </select>
             </label>
             <label className="text-sm">Days<input name="days" type="number" defaultValue={30} min={1} max={366} className={`${input} mt-1 block w-20`} /></label>
-            <button className={`${btn} border border-ink`}>Set plan</button>
+            <button className={`${btn} btn-secondary`}>Set plan</button>
           </form>
           {u.banned ? (
-            <form action={unbanAction}><input type="hidden" name="userId" value={u.id} /><button className={`${btn} border border-ink`}>Unban</button></form>
+            <form action={unbanAction}><input type="hidden" name="userId" value={u.id} /><button className={`${btn} btn-secondary`}>Unban</button></form>
           ) : (
             <form action={banAction} className="flex flex-wrap items-end gap-2">
               <input type="hidden" name="userId" value={u.id} />
               <label className="text-sm">Ban reason<input name="reason" required className={`${input} mt-1 block w-56`} /></label>
-              <button className={`${btn} bg-danger text-white`}>Ban user</button>
+              <button className={`${btn} btn-danger`}>Ban user</button>
             </form>
           )}
         </div>
@@ -79,12 +79,12 @@ function Table({ title, head, rows }: { title: string; head: string[]; rows: str
     <section className="mt-8">
       <h2 className="text-lg font-bold">{title}</h2>
       {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-graphite">Nothing yet.</p>
+        <p className="mt-2 text-sm text-mute">Nothing yet.</p>
       ) : (
-        <div className="mt-2 overflow-x-auto rounded-2xl border border-rule bg-surface">
+        <div className="mt-2 overflow-x-auto rounded-2xl border border-line bg-surface">
           <table className="w-full min-w-[36rem] text-left text-sm">
-            <thead className="border-b border-rule text-graphite"><tr>{head.map((h) => <th key={h} className="px-4 py-2 font-semibold">{h}</th>)}</tr></thead>
-            <tbody className="divide-y divide-rule">{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className="max-w-[24rem] truncate px-4 py-2">{c}</td>)}</tr>)}</tbody>
+            <thead className="border-b border-line text-mute"><tr>{head.map((h) => <th key={h} className="px-4 py-2 font-semibold">{h}</th>)}</tr></thead>
+            <tbody className="divide-y divide-line">{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className="max-w-[24rem] truncate px-4 py-2">{c}</td>)}</tr>)}</tbody>
           </table>
         </div>
       )}
