@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* VoiceoverDrop v2. See docs/design/brand.md.
+/* VoiceDrop v2. See docs/design/brand.md.
    Light is the default; dark is opt-in via data-theme="dark". No decorative gradients. */
 :root {
   --bg: #eef1ec;
@@ -62,6 +62,29 @@
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   --font-script: var(--font-courier), "Courier New", ui-monospace, monospace;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Tailwind 4 preflight resets buttons to the default arrow; restore the hand on everything clickable. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  select:not(:disabled),
+  label:has(input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled)),
+  label[for],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="range"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  input[type="submit"]:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 html {

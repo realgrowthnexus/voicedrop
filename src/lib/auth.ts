@@ -7,6 +7,7 @@ import { magicLink } from "better-auth/plugins";
 import { captcha } from "better-auth/plugins/captcha";
 import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { BRAND } from "@/lib/brand";
 import * as schema from "@/db/schema";
 import { isDisposableEmail } from "@/lib/abuse/disposable";
 import { clientIp, hashIp } from "@/lib/abuse/ip";
@@ -46,7 +47,7 @@ function build() {
   ];
 
   return betterAuth({
-    appName: "VoiceoverDrop",
+    appName: BRAND,
     baseURL: e.APP_URL,
     secret: e.BETTER_AUTH_SECRET,
     trustedOrigins: [e.APP_URL],

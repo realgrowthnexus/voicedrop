@@ -204,8 +204,9 @@ export function Studio() {
                 return (
                   <label
                     key={f}
+                    title={f === "mp3" ? "MP3 is always included" : locked ? "Available on paid plans" : undefined}
                     className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors duration-300 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)] ${
-                      locked ? "cursor-not-allowed border-line text-mute" : on ? "cursor-pointer border-lamp/70 bg-lamp/10" : "cursor-pointer border-line-strong hover:border-ink"
+                      locked ? "cursor-not-allowed border-line text-mute" : f === "mp3" ? "cursor-default border-lamp/70 bg-lamp/10" : on ? "cursor-pointer border-lamp/70 bg-lamp/10" : "cursor-pointer border-line-strong hover:border-ink"
                     }`}
                   >
                     <input

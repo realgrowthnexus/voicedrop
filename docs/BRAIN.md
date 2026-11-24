@@ -1,4 +1,4 @@
-# BRAIN — VoiceoverDrop project memory
+# BRAIN — VoiceDrop project memory
 
 Read this first in any new session. Never write secret values here.
 
@@ -18,8 +18,14 @@ Read this first in any new session. Never write secret values here.
 
 ## Decisions (2026-11-23)
 Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/superpowers/plans/2026-11-23-voiceoverdrop-v1.md`.
-- Brand **VoiceoverDrop** (owner confirmed; "VoiceDrop" is taken by a US company). One constant: `src/lib/brand.ts`.
-- Domain for now: `voice.smmpakservices.com` (owner's existing domain, DNS in Hostinger). `voiceoverdrop.com` not bought.
+- Brand **VoiceDrop** (2026-11-24: owner renamed from VoiceoverDrop after buying `voicedrop.rest`; owner was told earlier
+  a US company uses the name "VoiceDrop" — trademark risk is the owner's call). One constant: `src/lib/brand.ts`.
+- Domain: **`voicedrop.rest`**, registered at Spaceship, hosted on Hostinger (nameservers → ns1/ns2.dns-parking.com).
+  Support mail `support@voicedrop.rest`, sender `login@voicedrop.rest`. Old `voice.smmpakservices.com` is no longer used.
+- Internal names kept on purpose: RunPod app `voiceoverdrop` / endpoint `lizqs4oqlbbm62` (renaming means a redeploy),
+  local DB names `voiceoverdrop*` in tests.
+- Cursor rule: Tailwind 4 preflight gives buttons the arrow cursor; globals.css `@layer base` restores the hand on all
+  clickable controls. `tests/e2e/audit.spec.ts` checks cursor, phone overflow, console errors and status on every page.
 - Target: YouTubers/TikTokers. English only. 12 Kokoro voices (`src/lib/plans.ts` VOICES, worker `engine.py` VOICE_MAP).
 - Free 3k chars/rolling week (1.5k/request, MP3). Creator $9=100k/period, Pro $19=300k/period,
   Pack $5=50k never expire. Daily caps 25k/60k/25k (rolling 24h). Paid/pack 10k/request + WAV + SRT.

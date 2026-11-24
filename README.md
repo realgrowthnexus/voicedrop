@@ -1,4 +1,4 @@
-# VoiceoverDrop
+# VoiceDrop
 
 Paste a script → get a natural English voice-over (MP3 / WAV) plus word-timed SRT subtitles.
 For YouTubers and TikTokers. Free plan, Creator/Pro subscriptions and credit packs (Paddle).

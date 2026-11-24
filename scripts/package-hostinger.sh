@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-OUT="${1:-dist/voiceoverdrop-web.zip}"
+OUT="${1:-dist/voicedrop-web.zip}"
 mkdir -p "$(dirname "$OUT")"
 LIST="$(mktemp)"
 

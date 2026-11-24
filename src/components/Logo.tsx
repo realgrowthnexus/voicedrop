@@ -16,7 +16,7 @@ export function Logo({ href = "/" }: { href?: string }) {
       <span className="transition-transform duration-500 ease-[var(--ease-out)] group-hover:-rotate-12">
         <LogoMark />
       </span>
-      <span>VoiceoverDrop</span>
+      <span>{BRAND}</span>
     </Link>
   );
 }

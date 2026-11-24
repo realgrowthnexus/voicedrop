@@ -17,9 +17,7 @@ async function settle(page: import("@playwright/test").Page) {
 
 const axe = (page: unknown) => new AxeBuilder({ page: page as ConstructorParameters<typeof AxeBuilder>[0]["page"] });
 
-test.afterAll(async () => {
-  await sql.end();
-});
+// The shared `sql` client is used by every spec in this worker; it closes when the worker exits.
 
 test("hero demo highlights words while it plays", async ({ page }) => {
   await page.goto("/");

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SUPPORT_EMAIL } from "@/lib/brand";
+import { BRAND, SUPPORT_EMAIL } from "@/lib/brand";
 import { LogoMark } from "./Logo";
 
 export function SiteFooter() {
@@ -28,19 +28,19 @@ export function SiteFooter() {
         </nav>
       </div>
       {/* Decorative wordmark (artwork, not text) */}
-      <svg aria-hidden viewBox="0 0 1200 170" className="pointer-events-none mx-auto block w-full max-w-[1400px] select-none px-3" preserveAspectRatio="xMidYMid meet">
+      <svg aria-hidden viewBox="0 0 1200 220" className="pointer-events-none mx-auto block w-full max-w-[1400px] select-none px-3" preserveAspectRatio="xMidYMid meet">
         <text
           x="600"
-          y="140"
+          y="185"
           textAnchor="middle"
           fill="currentColor"
           className="text-ink"
-          style={{ fontFamily: "var(--font-instrument)", fontWeight: 700, fontSize: 178, letterSpacing: "-0.05em", opacity: 0.06 }}
+          style={{ fontFamily: "var(--font-instrument)", fontWeight: 700, fontSize: 250, letterSpacing: "-0.05em", opacity: 0.06 }}
         >
-          VoiceoverDrop
+          {BRAND}
         </text>
       </svg>
-      <p className="mx-auto max-w-[1240px] px-5 pb-8 pt-4 text-sm text-mute sm:px-8">© {new Date().getFullYear()} VoiceoverDrop. All rights reserved.</p>
+      <p className="mx-auto max-w-[1240px] px-5 pb-8 pt-4 text-sm text-mute sm:px-8">© {new Date().getFullYear()} {BRAND}. All rights reserved.</p>
     </footer>
   );
 }
