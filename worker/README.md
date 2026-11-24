@@ -7,7 +7,7 @@ Kokoro-82M (ONNX, timestamped) → MP3 / WAV / word-timed SRT.
 - `Dockerfile` — RunPod Serverless GPU image; model pinned by revision + sha256
 
 ```bash
-uv venv -p 3.11 .venv && uv pip install -p .venv/bin/python -r requirements-dev.txt && uv pip install -p .venv/bin/python --no-deps kokoro-onnx==0.6.1
+uv venv -p 3.11 .venv && uv pip install -p .venv/bin/python -r requirements-dev.txt
 .venv/bin/python scripts/fetch_models.py
 .venv/bin/python -m pytest -q
 .venv/bin/python local_server.py   # http://127.0.0.1:8188

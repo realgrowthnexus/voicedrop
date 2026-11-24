@@ -67,12 +67,15 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
 
   if (state === "sent") {
     return (
-      <div className="mt-8 rounded-2xl border border-rule bg-surface p-6" role="status">
-        <h2 className="text-xl font-bold">Check your inbox</h2>
-        <p className="mt-2 text-graphite">
+      <div className="panel fade-in mt-8 p-6" role="status">
+        <div className="mb-4 grid size-11 place-items-center rounded-full bg-lamp text-lamp-ink" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+        </div>
+        <h2 className="text-xl font-semibold tracking-[-0.02em]">Check your inbox</h2>
+        <p className="mt-2 text-mute">
           We sent a sign-in link to <span className="font-semibold text-ink">{email}</span>. It works once and expires in 15 minutes.
         </p>
-        <button type="button" className="mt-4 font-semibold underline underline-offset-4" onClick={() => setState("idle")}>
+        <button type="button" className="link-underline mt-4 font-semibold" onClick={() => setState("idle")}>
           Use a different email
         </button>
       </div>
@@ -86,7 +89,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
           <button
             type="button"
             onClick={google}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-ink bg-surface font-semibold hover:bg-ink hover:text-paper"
+            className="btn btn-secondary w-full"
           >
             <svg aria-hidden width="18" height="18" viewBox="0 0 48 48">
               <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
@@ -96,15 +99,15 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
             </svg>
             Continue with Google
           </button>
-          <div className="my-6 flex items-center gap-3 text-sm text-graphite">
-            <span className="h-px flex-1 bg-rule" />
+          <div className="my-6 flex items-center gap-3 text-sm text-mute">
+            <span className="h-px flex-1 bg-line" />
             or use email
-            <span className="h-px flex-1 bg-rule" />
+            <span className="h-px flex-1 bg-line" />
           </div>
         </>
       ) : null}
       <form onSubmit={submit} noValidate>
-        <label htmlFor="email" className="block font-semibold">
+        <label htmlFor="email" className="block text-sm font-medium">
           Email address
         </label>
         <input
@@ -115,7 +118,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-2 h-12 w-full rounded-xl border border-rule bg-surface px-4 text-ink placeholder:text-graphite focus:border-ink"
+          className="field mt-2 placeholder:text-mute"
           placeholder="you@example.com"
           aria-describedby={error ? "login-error" : undefined}
         />
@@ -128,7 +131,7 @@ export function LoginForm({ googleEnabled, turnstileSiteKey }: { googleEnabled: 
         <button
           type="submit"
           disabled={state === "sending" || !/^\S+@\S+\.\S+$/.test(email.trim())}
-          className="mt-4 h-12 w-full rounded-full bg-ink font-semibold text-paper hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-primary mt-5 w-full"
         >
           {state === "sending" ? "Sending link…" : "Email me a sign-in link"}
         </button>

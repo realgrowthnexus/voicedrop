@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
-import phonemizer
-from kokoro_onnx.config import DEFAULT_VOCAB
-from kokoro_onnx.tokenizer import Tokenizer, _espeak_lock
+
+from .models import load_model_and_voices
+from .phonemes import VOCAB, phonemize_words
+
+log = logging.getLogger("vd_worker")
 
 MAX_TOKENS = 500  # model limit is 510 incl. pads; keep headroom
 
@@ -29,6 +33,7 @@ VOICE_MAP: dict[str, tuple[tuple[str, ...], str]] = {
     "af_aoede": (("af_aoede",), "en-us"),
     "bf_emma": (("bf_emma",), "en-gb"),
 }
+SOURCE_VOICES = {s for sources, _ in VOICE_MAP.values() for s in sources}
 
 
 @dataclass(frozen=True)
@@ -37,25 +42,33 @@ class WordTokens:
     tokens: list[int]
 
 
+def _providers() -> list[str]:
+    avail = ort.get_available_providers()
+    if "CUDAExecutionProvider" in avail:
+        # Load CUDA/cuDNN from pip-installed nvidia-* wheels (e.g. shipped with torch) if present.
+        try:
+            ort.preload_dlls()
+        except Exception as e:  # noqa: BLE001 - best effort; the session will report real failures
+            log.warning("onnxruntime preload_dlls failed: %s", e)
+        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+    return ["CPUExecutionProvider"]
+
+
 class Engine:
-    def __init__(self, model_path: str, voices_path: str, providers: list[str] | None = None):
-        if providers is None:
-            avail = ort.get_available_providers()
-            providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider") if p in avail]
+    def __init__(self, model_dir: str | Path, providers: list[str] | None = None, verify: bool = True):
+        model_path, raw = load_model_and_voices(Path(model_dir), SOURCE_VOICES, verify=verify)
         opts = ort.SessionOptions()
         threads = os.environ.get("VD_ORT_THREADS")
         if threads:
             opts.intra_op_num_threads = int(threads)
-        self.session = ort.InferenceSession(model_path, sess_options=opts, providers=providers)
+        self.session = ort.InferenceSession(str(model_path), sess_options=opts, providers=providers or _providers())
         self.providers = self.session.get_providers()
-        self.tokenizer = Tokenizer()  # configures espeak-ng
-        self.vocab = DEFAULT_VOCAB
+        self.vocab = VOCAB
         self.space_id = self.vocab[" "]
-        raw = np.load(voices_path)
-        self.styles: dict[str, np.ndarray] = {}
-        for public_id, (sources, _lang) in VOICE_MAP.items():
-            packs = [np.asarray(raw[s], dtype=np.float32) for s in sources]
-            self.styles[public_id] = np.mean(packs, axis=0).astype(np.float32)
+        self.styles: dict[str, np.ndarray] = {
+            public_id: np.mean([raw[s] for s in sources], axis=0).astype(np.float32)
+            for public_id, (sources, _lang) in VOICE_MAP.items()
+        }
         self._lock = threading.Lock()
 
     @staticmethod
@@ -64,12 +77,8 @@ class Engine:
 
     def phonemize_words(self, words: list[str], lang: str) -> list[WordTokens]:
         """Phonemize word by word (one espeak call for the whole list)."""
-        if not words:
-            return []
-        with _espeak_lock:
-            phones = phonemizer.phonemize(words, lang, preserve_punctuation=True, with_stress=True)
         out: list[WordTokens] = []
-        for w, ph in zip(words, phones):
+        for w, ph in zip(words, phonemize_words(words, lang)):
             ids = [self.vocab[c] for c in ph.strip() if c in self.vocab and c != " "]
             out.append(WordTokens(w, ids))
         return out

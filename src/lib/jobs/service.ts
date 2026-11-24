@@ -261,7 +261,7 @@ export async function fileUrl(job: Job, format: string, download: boolean): Prom
   if (!FORMATS.includes(f) || !(job.formats as Format[]).includes(f)) throw new HttpError(404, "not_found", "Not found.");
   if (job.status !== "done" || !job.files?.[f]) throw new HttpError(404, "not_ready", "This file is not ready.");
   if (job.expiresAt <= new Date()) throw new HttpError(410, "expired", "This file has expired (files are kept for 30 days).");
-  const name = `voiceoverdrop-${job.id.slice(0, 8)}.${f}`;
+  const name = `voicedrop-${job.id.slice(0, 8)}.${f}`;
   return storage().getUrl(jobFileKey(job.userId, job.id, f), { filename: name, contentType: CONTENT_TYPES[f], download });
 }
 

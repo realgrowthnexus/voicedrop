@@ -55,12 +55,22 @@ async function call(url: string, init: RequestInit & { headers?: Record<string, 
   return res.json();
 }
 
+/**
+ * RunPod SDK 2 queue functions are called as `fn(**input)`; our worker function is
+ * `synthesize(job)`, so the job goes under the `job` key. The local dev server and the
+ * Docker handler accept both shapes.
+ */
+export function runpodPayload(input: JobInput): { job: JobInput } {
+  return { job: input };
+}
+
 function httpBackend(base: string, token: string | undefined, extra: Record<string, unknown> = {}): TtsBackend {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (token) headers.authorization = `Bearer ${token}`;
   return {
     async submit(input, webhook) {
-      const r = (await call(`${base}/run`, { method: "POST", headers, body: JSON.stringify({ input, webhook, ...extra }) })) as { id?: string };
+      const body = JSON.stringify({ input: runpodPayload(input), webhook, ...extra });
+      const r = (await call(`${base}/run`, { method: "POST", headers, body })) as { id?: string };
       if (!r.id) throw new Error("TTS backend returned no job id");
       return { id: r.id };
     },

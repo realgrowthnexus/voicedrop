@@ -1,0 +1,12 @@
+models/
+.venv/
+tests/
+__pycache__/
+*.pyc
+.pytest_cache/
+local_server.py
+Dockerfile
+.dockerignore
+scripts/
+requirements*.txt
+README.md

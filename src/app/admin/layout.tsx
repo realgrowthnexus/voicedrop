@@ -9,7 +9,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <>
       <AppHeader email={u.email} isAdmin />
-      <div className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+      <div className="mx-auto w-full max-w-[1240px] px-5 pt-6 sm:px-8">
         <nav aria-label="Admin" className="flex flex-wrap gap-2 text-sm">
           {[
             ["/admin", "Overview"],
@@ -17,13 +17,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             ["/admin/jobs", "Jobs"],
             ["/admin/flags", "Flagged scripts"],
           ].map(([href, label]) => (
-            <Link key={href} href={href} className="rounded-full border border-rule px-3 py-1.5 font-semibold hover:border-ink">
+            <Link key={href} href={href} className="btn btn-secondary btn-sm">
               {label}
             </Link>
           ))}
         </nav>
       </div>
-      <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-24 pt-6 sm:px-6">
+      <main id="main" className="mx-auto w-full max-w-[1240px] px-5 pb-24 pt-6 sm:px-8">
         {children}
       </main>
     </>

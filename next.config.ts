@@ -41,14 +41,6 @@ const nextConfig: NextConfig = {
       { source: "/samples/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800" }] },
     ];
   },
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
 };
 
 export default nextConfig;

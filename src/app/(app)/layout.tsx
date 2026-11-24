@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
+import { ViewTransition } from "react";
 import { AppHeader } from "@/components/AppHeader";
-import { isAdminEmail, getUser } from "@/lib/session";
+import { getUser, isAdminEmail } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +12,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <AppHeader email={u.email} isAdmin={u.emailVerified && isAdminEmail(u.email)} />
-      <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-24 pt-4 sm:px-6">
-        {children}
-      </main>
+      <ViewTransition>
+        <main id="main" className="mx-auto w-full max-w-[1240px] px-5 pb-28 pt-10 sm:px-8">
+          {children}
+        </main>
+      </ViewTransition>
     </>
   );
 }

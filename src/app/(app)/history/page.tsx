@@ -20,37 +20,46 @@ export default async function HistoryPage() {
   const jobs = (await listJobs(u.id, 50)).map((j) => toPublicJob(j));
   return (
     <div>
-      <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">History</h1>
-      <p className="mt-2 text-graphite">Your last 50 voice-overs. Files are kept for 30 days.</p>
+      <h1 className="title text-[clamp(2.4rem,5vw,3.4rem)]">History</h1>
+      <p className="mt-2 text-mute">Your last 50 voice-overs. Files are kept for 30 days.</p>
       {jobs.length === 0 ? (
-        <div className="mt-10 rounded-[20px] border border-dashed border-graphite/60 p-8 text-center">
+        <div className="mt-10 rounded-[20px] border border-dashed border-line-strong p-8 text-center">
           <p className="text-lg font-semibold">No voice-overs yet</p>
-          <p className="mt-1 text-graphite">Paste a script in the studio to make your first one.</p>
-          <Link href="/dashboard" className="mt-5 inline-flex h-12 items-center rounded-full bg-ink px-6 font-semibold text-paper">
+          <p className="mt-1 text-mute">Paste a script in the studio to make your first one.</p>
+          <Link href="/dashboard" className="mt-5 btn btn-primary">
             Open the studio
           </Link>
         </div>
       ) : (
-        <ul className="mt-8 divide-y divide-rule overflow-hidden rounded-[20px] border border-rule bg-surface">
+        <ul className="mt-8 divide-y divide-line overflow-hidden rounded-[20px] border border-line bg-surface">
           {jobs.map((j) => (
-            <li key={j.id} className="p-5">
+            <li key={j.id} className="p-5 transition-colors duration-300 hover:bg-surface-2 sm:p-6">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-semibold">
-                  {j.voiceName} · {j.chars.toLocaleString("en-US")} characters
+                  {j.voiceName}, {j.chars.toLocaleString("en-US")} characters
                 </p>
-                <p className="text-sm text-graphite">
+                <p className="text-sm text-mute">
                   <time dateTime={j.createdAt}>{new Date(j.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC</time>
-                  {" · "}
-                  <span className={j.status === "failed" || j.status === "rejected" ? "text-danger" : j.status === "done" ? "text-ok" : ""}>{STATUS[j.status]}</span>
+                  <span
+                    className={`ml-3 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                      j.status === "failed" || j.status === "rejected"
+                        ? "border-danger/40 text-danger"
+                        : j.status === "done"
+                          ? "border-ok/40 text-ok"
+                          : "border-lamp/50 text-ink"
+                    }`}
+                  >
+                    {STATUS[j.status]}
+                  </span>
                 </p>
               </div>
-              <p className="script-text mt-2 line-clamp-2 text-graphite">{j.preview}</p>
+              <p className="script-text mt-2 line-clamp-2 text-mute">{j.preview}</p>
               {j.status === "done" ? (
                 <div className="mt-2">
                   <JobResult job={j} compact />
                 </div>
               ) : j.status === "failed" || j.status === "rejected" ? (
-                <p className="mt-2 text-sm text-graphite">{j.error}</p>
+                <p className="mt-2 text-sm text-mute">{j.error}</p>
               ) : null}
             </li>
           ))}

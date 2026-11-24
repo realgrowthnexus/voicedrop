@@ -15,4 +15,4 @@ def engine():
         pytest.skip("model files not downloaded (run scripts/fetch_models.py)")
     from vd_worker.engine import Engine
 
-    return Engine(str(MODELS / "model.onnx"), str(MODELS / "voices-v1.0.bin"), providers=["CPUExecutionProvider"])
+    return Engine(MODELS, providers=["CPUExecutionProvider"])

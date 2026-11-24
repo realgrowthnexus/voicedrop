@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import shutil
 import subprocess
 import wave
 
@@ -49,9 +50,19 @@ def to_wav_bytes(audio: np.ndarray, sample_rate: int = SAMPLE_RATE) -> bytes:
     return buf.getvalue()
 
 
+def ffmpeg_exe() -> str:
+    """System ffmpeg if present, else the static binary from the imageio-ffmpeg wheel."""
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    import imageio_ffmpeg  # pip fallback for images without ffmpeg
+
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
 def to_mp3_bytes(wav_bytes: bytes, bitrate: str = "160k") -> bytes:
     proc = subprocess.run(
-        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "wav", "-i", "pipe:0",
+        [ffmpeg_exe(), "-hide_banner", "-loglevel", "error", "-f", "wav", "-i", "pipe:0",
          "-codec:a", "libmp3lame", "-b:a", bitrate, "-ar", "44100", "-ac", "1", "-f", "mp3", "pipe:1"],
         input=wav_bytes,
         capture_output=True,

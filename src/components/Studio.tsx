@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ACTIVE, api, countChars, type Format, type Me, type PublicJob } from "@/lib/client-types";
 import { VoicePreviewList } from "./VoicePreviewList";
 import { JobResult } from "./JobResult";
+import { Skeleton } from "./Skeleton";
+import { VoiceLine } from "./VoiceLine";
 
 const n = (x: number) => x.toLocaleString("en-US");
 const DRAFT_KEY = "vod:draft";
@@ -122,18 +124,18 @@ export function Studio() {
   const meter = Math.min(100, (chars / Math.max(1, max)) * 100);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_23rem]">
       <form onSubmit={generate} className="min-w-0" aria-describedby="studio-help">
-        <div className="flex items-end justify-between gap-4">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Studio</h1>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h1 className="title text-[clamp(2.4rem,5vw,3.4rem)]">Studio</h1>
           <BalancePill me={me} />
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[20px] border border-rule bg-surface focus-within:border-ink">
-          <label htmlFor="script" className="flex items-center justify-between border-b border-rule px-5 py-3 text-sm text-graphite">
-            <span className="font-semibold text-ink">Your script</span>
+        <div className="group mt-8 overflow-hidden rounded-[20px] border border-line bg-surface transition-[border-color,box-shadow] duration-300 focus-within:border-lamp/70 focus-within:shadow-[0_0_0_4px_var(--lamp-soft)]">
+          <label htmlFor="script" className="flex items-center justify-between border-b border-line px-5 py-3 text-sm text-mute">
+            <span className="font-medium text-ink">Your script</span>
             <span className="script-text tabular-nums" aria-live="polite">
-              <span className={over ? "font-bold text-danger" : ""}>{n(chars)}</span> / {n(max)}
+              <span className={over ? "font-bold text-danger" : "text-ink"}>{n(chars)}</span> / {n(max)}
             </span>
           </label>
           <textarea
@@ -143,13 +145,16 @@ export function Studio() {
             rows={12}
             maxLength={20000}
             placeholder="Paste or type your script here. Leave a blank line between paragraphs for a longer pause."
-            className="script-text block min-h-[18rem] w-full resize-y bg-transparent px-5 py-4 text-[1.05rem] leading-[1.7] text-ink outline-none placeholder:text-graphite"
+            className="script-text block min-h-[18rem] w-full resize-y bg-transparent px-5 py-4 text-[1.05rem] leading-[1.75] text-ink outline-none placeholder:text-mute/80"
           />
-          <div className="h-1 bg-rule" aria-hidden>
-            <div className={`h-1 ${over ? "bg-danger" : "bg-marker"}`} style={{ width: `${meter}%` }} />
+          <div className="h-[3px] bg-line" aria-hidden>
+            <div
+              className={`h-[3px] transition-[width,background-color] duration-500 ease-[var(--ease-out)] ${over ? "bg-danger" : "bg-lamp"}`}
+              style={{ width: `${meter}%` }}
+            />
           </div>
         </div>
-        <p id="studio-help" className="mt-2 text-sm text-graphite">
+        <p id="studio-help" className="mt-2 text-sm text-mute">
           About 1,000 characters make a minute of audio. Numbers, prices and times are read naturally.
         </p>
         {over ? (
@@ -157,7 +162,7 @@ export function Studio() {
             This script is {n(chars - max)} characters over your {n(max)}-character limit per voice-over. Split it into parts
             {me?.tier === "free" ? (
               <>
-                {" "}or <Link href="/pricing" className="font-semibold underline underline-offset-4">upgrade</Link>
+                {" "}or <Link href="/pricing" className="link-underline font-semibold">upgrade</Link>
               </>
             ) : null}
             .
@@ -165,14 +170,14 @@ export function Studio() {
         ) : short && me ? (
           <p role="alert" className="mt-2 text-danger">
             You have {n(available)} characters available right now.{" "}
-            <Link href="/billing" className="font-semibold underline underline-offset-4">Get more characters</Link>
+            <Link href="/billing" className="link-underline font-semibold">Get more characters</Link>
           </p>
         ) : null}
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <div className="mt-8 grid gap-8 sm:grid-cols-2">
           <div>
-            <label htmlFor="speed" className="font-semibold">
-              Speed <span className="script-text font-normal text-graphite">{speed.toFixed(2)}×</span>
+            <label htmlFor="speed" className="flex items-baseline justify-between text-sm font-medium">
+              Speed <span className="script-text text-mute">{speed.toFixed(2)}×</span>
             </label>
             <input
               id="speed"
@@ -182,79 +187,90 @@ export function Studio() {
               step={0.05}
               value={speed}
               onChange={(e) => setSpeed(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--ink)]"
+              className="range mt-2 w-full"
+              style={{ ["--p" as string]: `${((speed - 0.8) / 0.4) * 100}%` }}
             />
-            <div className="flex justify-between text-sm text-graphite">
+            <div className="flex justify-between text-xs text-mute">
               <span>Slower</span>
               <span>Faster</span>
             </div>
           </div>
           <fieldset>
-            <legend className="font-semibold">Files</legend>
+            <legend className="text-sm font-medium">Files</legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {(["mp3", "wav", "srt"] as Format[]).map((f) => {
                 const locked = !allowed.includes(f);
+                const on = formats.includes(f) && !locked;
                 return (
                   <label
                     key={f}
-                    className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-focus ${
-                      locked ? "cursor-not-allowed border-rule text-graphite" : "cursor-pointer border-ink"
+                    title={f === "mp3" ? "MP3 is always included" : locked ? "Available on paid plans" : undefined}
+                    className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors duration-300 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)] ${
+                      locked ? "cursor-not-allowed border-line text-mute" : f === "mp3" ? "cursor-default border-lamp/70 bg-lamp/10" : on ? "cursor-pointer border-lamp/70 bg-lamp/10" : "cursor-pointer border-line-strong hover:border-ink"
                     }`}
                   >
                     <input
                       type="checkbox"
-                      className="size-4 accent-[var(--ink)]"
-                      checked={formats.includes(f) && !locked}
+                      className="size-4 accent-[var(--lamp)]"
+                      checked={on}
                       disabled={locked || f === "mp3"}
                       onChange={() => toggleFormat(f)}
                     />
                     {f.toUpperCase()}
                     {f === "srt" ? " subtitles" : ""}
+                    {locked ? (
+                      <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+                    ) : null}
                   </label>
                 );
               })}
             </div>
             {allowed.length < 3 ? (
-              <p className="mt-2 text-sm text-graphite">
-                WAV and SRT come with paid plans and credit packs. <Link href="/pricing" className="underline underline-offset-4">See plans</Link>
+              <p className="mt-2 text-sm text-mute">
+                WAV and SRT come with paid plans and credit packs. <Link href="/pricing" className="link-underline text-ink">See plans</Link>
               </p>
             ) : null}
           </fieldset>
         </div>
 
-        <div className="mt-8 lg:hidden">
-          <h2 className="mb-3 font-semibold">Voice</h2>
+        <div className="mt-10 lg:hidden">
+          <h2 className="mb-3 text-sm font-medium">Voice</h2>
           <VoicePreviewList selected={voice} onSelect={setVoice} name="voice-mobile" compact />
         </div>
 
-        <div className="sticky bottom-0 z-10 -mx-4 mt-8 border-t border-rule bg-paper/95 px-4 py-4 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="h-14 w-full rounded-full bg-ink text-lg font-semibold text-paper hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-10"
-          >
-            {submitting ? "Starting…" : busy ? "Voice-over in progress…" : `Generate voice-over${chars ? ` · ${n(chars)} characters` : ""}`}
+        <div className="sticky bottom-0 z-10 -mx-5 mt-10 border-t border-line bg-bg/85 px-5 py-4 backdrop-blur-xl sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+          <button type="submit" disabled={!canSubmit} className="btn btn-primary btn-lg w-full sm:w-auto">
+            {submitting || busy ? (
+              <span className="eq is-live" aria-hidden>
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            ) : null}
+            {submitting ? "Starting…" : busy ? "Voice-over in progress…" : `Generate voice-over${chars ? ` (${n(chars)} characters)` : ""}`}
           </button>
         </div>
 
         {error ? (
-          <p role="alert" className="mt-4 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3">
+          <p role="alert" className="fade-in mt-5 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3">
             {error}
           </p>
         ) : null}
 
         <section aria-live="polite" className="mt-8">
           {job && ACTIVE.includes(job.status) ? (
-            <div className="rounded-[20px] border border-rule bg-surface p-5">
-              <div className="flex items-center gap-3">
-                <span aria-hidden className="relative flex size-3">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-marker opacity-75 motion-reduce:hidden" />
-                  <span className="relative inline-flex size-3 rounded-full bg-marker" />
-                </span>
-                <p className="font-semibold">{STATUS_COPY[job.status]}</p>
+            <div
+              className="fade-in relative overflow-hidden rounded-[22px] border border-white/10 bg-stage p-6 text-stage-ink"
+              style={{ ["--ink" as string]: "var(--stage-ink)", ["--mute" as string]: "var(--stage-mute)" }}
+            >
+              <div className="h-20">
+                <VoiceLine analyser={null} idleAmp={job.status === "processing" ? 0.35 : 0.14} />
               </div>
-              <p className="mt-1 text-sm text-graphite">
-                {job.voiceName} · {n(job.chars)} characters{job.status !== "held" ? ` · ${elapsed}s` : ""}. You can leave this page; it&apos;ll be in your history.
+              <p className="mt-2 font-semibold">{STATUS_COPY[job.status]}</p>
+              <p className="mt-1 text-sm text-stage-mute">
+                {job.voiceName}, {n(job.chars)} characters{job.status !== "held" ? `, ${elapsed}s` : ""}. You can leave this page; it&apos;ll be in your
+                history.
               </p>
             </div>
           ) : job ? (
@@ -264,7 +280,7 @@ export function Studio() {
       </form>
 
       <aside className="hidden lg:block" aria-label="Voice">
-        <h2 className="mb-3 mt-2 font-semibold lg:mt-[3.4rem]">Voice</h2>
+        <h2 className="mb-3 mt-3 text-sm font-medium lg:mt-[4.6rem]">Voice</h2>
         <VoicePreviewList selected={voice} onSelect={setVoice} name="voice" compact />
       </aside>
     </div>
@@ -272,7 +288,7 @@ export function Studio() {
 }
 
 function BalancePill({ me }: { me: Me | null }) {
-  if (!me) return <span className="h-9 w-40 animate-pulse rounded-full bg-rule motion-reduce:animate-none" aria-hidden />;
+  if (!me) return <Skeleton className="h-10 w-56 rounded-full" label="Loading your balance" />;
   const b = me.balances;
   const label =
     me.tier === "free"
@@ -281,7 +297,8 @@ function BalancePill({ me }: { me: Me | null }) {
         ? `${n(b.packRemaining + b.freeRemaining)} characters left`
         : `${n(b.subscriptionRemaining + b.packRemaining)} characters left`;
   return (
-    <Link href="/billing" className="rounded-full border border-rule bg-surface px-4 py-2 text-sm font-semibold hover:border-ink">
+    <Link href="/billing" className="btn btn-secondary btn-sm fade-in">
+      <span aria-hidden className="size-1.5 rounded-full bg-lamp" />
       {label}
     </Link>
   );

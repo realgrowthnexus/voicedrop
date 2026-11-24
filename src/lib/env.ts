@@ -27,7 +27,7 @@ const schema = z
 
     EMAIL_BACKEND: z.enum(["resend", "log"]).default("resend"),
     RESEND_API_KEY: optStr,
-    EMAIL_FROM: z.string().default("VoiceoverDrop <login@voice.smmpakservices.com>"),
+    EMAIL_FROM: z.string().default("VoiceDrop <login@voicedrop.rest>"),
 
     CAPTCHA_DISABLED: bool,
     TURNSTILE_SECRET_KEY: optStr,

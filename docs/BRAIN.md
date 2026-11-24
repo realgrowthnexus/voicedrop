@@ -1,4 +1,4 @@
-# BRAIN — VoiceoverDrop project memory
+# BRAIN — VoiceDrop project memory
 
 Read this first in any new session. Never write secret values here.
 
@@ -18,8 +18,14 @@ Read this first in any new session. Never write secret values here.
 
 ## Decisions (2026-11-23)
 Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/superpowers/plans/2026-11-23-voiceoverdrop-v1.md`.
-- Brand **VoiceoverDrop** (owner confirmed; "VoiceDrop" is taken by a US company). One constant: `src/lib/brand.ts`.
-- Domain for now: `voice.smmpakservices.com` (owner's existing domain, DNS in Hostinger). `voiceoverdrop.com` not bought.
+- Brand **VoiceDrop** (2026-11-24: owner renamed from VoiceoverDrop after buying `voicedrop.rest`; owner was told earlier
+  a US company uses the name "VoiceDrop" — trademark risk is the owner's call). One constant: `src/lib/brand.ts`.
+- Domain: **`voicedrop.rest`**, registered at Spaceship, hosted on Hostinger (nameservers → ns1/ns2.dns-parking.com).
+  Support mail `support@voicedrop.rest`, sender `login@voicedrop.rest`. Old `voice.smmpakservices.com` is no longer used.
+- Internal names kept on purpose: RunPod app `voiceoverdrop` / endpoint `lizqs4oqlbbm62` (renaming means a redeploy),
+  local DB names `voiceoverdrop*` in tests.
+- Cursor rule: Tailwind 4 preflight gives buttons the arrow cursor; globals.css `@layer base` restores the hand on all
+  clickable controls. `tests/e2e/audit.spec.ts` checks cursor, phone overflow, console errors and status on every page.
 - Target: YouTubers/TikTokers. English only. 12 Kokoro voices (`src/lib/plans.ts` VOICES, worker `engine.py` VOICE_MAP).
 - Free 3k chars/rolling week (1.5k/request, MP3). Creator $9=100k/period, Pro $19=300k/period,
   Pack $5=50k never expire. Daily caps 25k/60k/25k (rolling 24h). Paid/pack 10k/request + WAV + SRT.
@@ -65,10 +71,29 @@ Spec: `docs/superpowers/specs/2026-11-23-voicedrop-design.md`; plan: `docs/super
      (`GET api.runpod.io/v2/billing/serverless?serverlessId=`); spend = max(estimate, billed).
   3. Endpoint caps: max 1 worker, idle 5 s, execution timeout 300 s.
   - RunPod account balance is ~$212 (shared with other projects), so prepaid balance is NOT the cap.
-- Worker image: GitHub Actions `.github/workflows/worker-image.yml` → `ghcr.io/realgrowthnexus/voiceoverdrop-worker:{sha,dev,latest}`.
+- Worker image via GitHub Actions/GHCR was dropped (Actions jobs on this account fail in 2 s without logs); the endpoint is deployed with the RunPod SDK instead (`worker/runpod_app.py`).
   Package must be made **public** (or RunPod given a registry credential) before the endpoint can pull it.
 - GPU choice: pools AMPERE_16 ($0.58/h) + AMPERE_24 ($0.75/h) fallback; budget uses $0.00021/s.
 - Owner pasted a RunPod API key in chat → must be **rotated** after setup (create a new key, delete the old one).
+
+## Redesign v2 (2026-11-24) — "Studio after dark"
+- Owner said v1 looked generic; reference for craft: courtoflove.art (not colours). Design system in `docs/design/brand.md`.
+- Tokens in `src/app/globals.css` (dark default, `data-theme="light"` opt-in; component classes live in `@layer components`
+  so Tailwind utilities can override them). Fonts: Instrument Sans (wdth axis) + Courier Prime for scripts.
+- Signature: `VoiceLine` canvas (draws in, breathes idle, real waveform via Web Audio analyser on same-origin samples).
+- Motion: Lenis smooth scroll (`SmoothScroll`), `Reveal`, line-mask headline, marquee, scroll-drawn `Steps`, ViewTransition
+  route cross-fades, skeletons (`Skeleton`, `loading.tsx`), custom player + range sliders. Reduced motion fully handled.
+- Build uses webpack (`next build --webpack`) + `@tailwindcss/postcss`: Hostinger's build box can't spawn Turbopack's
+  CSS worker process.
+- e2e axe runs on 8 pages in both themes after scrolling (reveals) — all clean.
+
+## RunPod endpoint (deployed 2026-11-24)
+- `voiceoverdrop-tts` id `lizqs4oqlbbm62` via Runpod SDK 2 (`worker/runpod_app.py`, `runpod flash deploy`), image
+  runpod/queue-gpu:py3.11; workers 0..1, idle 5 s, timeout 300 s, pools AMPERE_16/24, model staged from HF.
+- Request shape: `{"input": {"job": {...}}}` (app sends this). Smoke job COMPLETED (7.7 s audio, uploads OK).
+- OPEN ISSUE: worker ran on CPUExecutionProvider (GPU billed, CPU used). `{"input":{"job":{"diagnose":true}}}` returns a
+  GPU report — run it, fix CUDA libs (likely add nvidia-cudnn-cu12/cublas or use onnxruntime-gpu[cuda,cudnn]), redeploy.
+- Deploying from the sandbox needs a local aiohttp proxy shim (trust_env) — see session notes; not needed elsewhere.
 
 ## Next steps
 1. Owner: buy domain, create accounts (Neon, Cloudflare R2+Turnstile, Resend, Google OAuth, RunPod, Paddle) — `docs/DEPLOY.md`.

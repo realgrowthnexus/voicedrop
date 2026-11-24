@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { LoginForm } from "@/components/LoginForm";
+import { LoginStage } from "@/components/LoginStage";
 import { env } from "@/lib/env";
 import { getUser } from "@/lib/session";
 
@@ -21,24 +22,35 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const code = typeof sp.error === "string" ? sp.error : undefined;
   const e = env();
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6">
-        <Logo />
-      </header>
-      <main id="main" className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pb-24">
-        <h1 className="text-4xl font-extrabold tracking-tight">Sign in or create an account</h1>
-        <p className="mt-3 text-graphite">No password needed. New here? You start with 3,000 free characters a week.</p>
-        {code ? (
-          <p role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-ink">
-            {ERRORS[code] ?? "We couldn't sign you in. Please try again."}
+    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
+      <LoginStage />
+      <div className="flex flex-col">
+        <header className="px-5 py-5 sm:px-10 lg:hidden">
+          <Logo />
+        </header>
+        <main id="main" className="mx-auto flex w-full max-w-[26rem] flex-1 flex-col justify-center px-5 pb-20 pt-6">
+          <h1 className="title text-[2.6rem]">
+            <span className="line-mask"><span>Sign in or create</span></span>
+            <span className="line-mask"><span style={{ ["--d" as string]: "90ms" }}>an account.</span></span>
+          </h1>
+          <p className="fade-in mt-4 text-mute" style={{ ["--d" as string]: "250ms" }}>
+            No password needed. New here? You start with 3,000 free characters every week.
           </p>
-        ) : null}
-        <LoginForm googleEnabled={!!(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET)} turnstileSiteKey={e.CAPTCHA_DISABLED ? null : (e.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? null)} />
-        <p className="mt-8 text-sm text-graphite">
-          By continuing you agree to our <a className="underline underline-offset-4" href="/terms">Terms</a> and{" "}
-          <a className="underline underline-offset-4" href="/acceptable-use">Acceptable Use Policy</a>.
-        </p>
-      </main>
+          {code ? (
+            <p role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3">
+              {ERRORS[code] ?? "We couldn't sign you in. Please try again."}
+            </p>
+          ) : null}
+          <div className="fade-in" style={{ ["--d" as string]: "350ms" }}>
+            <LoginForm googleEnabled={!!(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET)} turnstileSiteKey={e.CAPTCHA_DISABLED ? null : (e.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? null)} />
+          </div>
+          <p className="mt-10 text-sm text-mute">
+            By continuing you agree to our{" "}
+            <a className="link-underline text-ink" href="/terms">Terms</a> and{" "}
+            <a className="link-underline text-ink" href="/acceptable-use">Acceptable Use Policy</a>.
+          </p>
+        </main>
+      </div>
     </div>
   );
 }

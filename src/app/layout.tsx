@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Courier_Prime, Schibsted_Grotesk } from "next/font/google";
+import { Courier_Prime, Instrument_Sans } from "next/font/google";
 import Script from "next/script";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import { BRAND, TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
-const grotesk = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-grotesk", display: "swap" });
+const instrument = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument", display: "swap", axes: ["wdth"] });
 const courier = Courier_Prime({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-courier", display: "swap" });
 
 export const metadata: Metadata = {
@@ -16,28 +17,30 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f5f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#11132a" },
-  ],
+  themeColor: "#eef1ec",
 };
 
-// Applies the saved theme before paint to avoid a flash.
-const themeScript = `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+// Light is the default; a saved "dark" choice is applied before paint (no flash).
+const themeScript = `try{var t=localStorage.getItem("theme");if(t==="dark")document.documentElement.dataset.theme="dark"}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const umamiSrc = process.env.NEXT_PUBLIC_UMAMI_SRC;
   const umamiId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
   return (
-    <html lang="en" className={`${grotesk.variable} ${courier.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${instrument.variable} ${courier.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-dvh antialiased">
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-lamp focus:px-4 focus:py-2 focus:text-lamp-ink"
+        >
           Skip to content
         </a>
+        <SmoothScroll />
         {children}
+        <div className="grain" aria-hidden />
         {umamiSrc && umamiId ? <Script src={umamiSrc} data-website-id={umamiId} strategy="afterInteractive" /> : null}
       </body>
     </html>

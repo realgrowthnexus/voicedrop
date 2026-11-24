@@ -1,4 +1,4 @@
-# VoiceoverDrop
+# VoiceDrop
 
 Paste a script → get a natural English voice-over (MP3 / WAV) plus word-timed SRT subtitles.
 For YouTubers and TikTokers. Free plan, Creator/Pro subscriptions and credit packs (Paddle).
@@ -14,7 +14,7 @@ cp .env.example .env.local            # fill in the dev values
 npm install
 DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/voiceoverdrop npm run db:migrate
 (cd worker && uv venv -p 3.11 .venv && uv pip install -p .venv/bin/python -r requirements-dev.txt \
-  && uv pip install -p .venv/bin/python --no-deps kokoro-onnx==0.6.1 && .venv/bin/python scripts/fetch_models.py)
+  && .venv/bin/python scripts/fetch_models.py)
 worker/.venv/bin/python worker/local_server.py &   # local stand-in for RunPod
 npm run dev
 ```

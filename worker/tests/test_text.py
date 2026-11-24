@@ -33,3 +33,11 @@ def test_emoji_only_normalizes_to_empty():
 
 def test_split_words():
     assert split_words(" a  b\tc ") == ["a", "b", "c"]
+
+
+def test_unwrap_accepts_both_job_shapes():
+    from vd_worker.handler import unwrap
+
+    job = {"job_id": "x", "text": "hi"}
+    assert unwrap({"job": job}) == job
+    assert unwrap(job) == job
